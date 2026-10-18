@@ -52,7 +52,21 @@
 
   .wrap { max-width: 1240px; margin: 0 auto; padding: 56px 32px 64px; }
 
-  header { margin-bottom: 40px; }
+  header { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+  .seg {
+    display: inline-flex; padding: 2px; border-radius: 9px; background: var(--fill);
+    flex: none; margin-top: 2px;
+  }
+  .seg button {
+    flex: none; height: 28px; padding: 0 14px; border-radius: 7px;
+    font-size: 13px; font-weight: 500; background: transparent; color: var(--text);
+  }
+  .seg button:active { transform: none; }
+  .seg button.on {
+    background: var(--card); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04);
+  }
+  @media (prefers-color-scheme: dark) { .seg button.on { background: #636366; } }
   .eyebrow {
     font-size: 13px; font-weight: 600; color: var(--accent);
     letter-spacing: 0; margin-bottom: 6px;
@@ -199,9 +213,15 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Гидравлическая модель экономики</div>
-    <h1>MONIAC</h1>
-    <p class="sub">Компьютер Филлипса, где деньги текут как вода. Уровень в резервуаре — запас, поток — расход.</p>
+    <div>
+      <div class="eyebrow" data-i18n="eyebrow">Гидравлическая модель экономики</div>
+      <h1>MONIAC</h1>
+      <p class="sub" data-i18n="sub">Компьютер Филлипса, где деньги текут как вода. Уровень в резервуаре — запас, поток — расход.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Language">
+      <button data-lang="ru">RU</button>
+      <button data-lang="en">EN</button>
+    </div>
   </header>
 
   <div class="app">
@@ -210,75 +230,120 @@
     <aside class="panel">
       <div class="card hero">
         <div class="hero-top">
-          <span class="label">Национальный доход</span>
+          <span class="label" data-i18n="income">Национальный доход</span>
           <span class="status" id="status">соединение…</span>
         </div>
         <div class="hero-val" id="r_Y">—</div>
         <div class="hero-eq">
-          <span>Равновесие Y* = k·(G + I + X) <b id="r_ys">—</b></span>
+          <span><span data-i18n="eq">Равновесие</span> Y* = k·(G + I + X) <b id="r_ys">—</b></span>
           <span>k <b id="r_k">—</b></span>
         </div>
       </div>
 
       <div class="card section">
-        <h2>Параметры</h2>
+        <h2 data-i18n="params">Параметры</h2>
         <div class="ctrl">
-          <label><span>Склонность к потреблению<i>c</i></span><b id="v_c">0.80</b></label>
+          <label><span><span data-i18n="p_c">Склонность к потреблению</span><i>c</i></span><b id="v_c">0.80</b></label>
           <input type="range" id="s_c" min="0.50" max="0.95" step="0.01" value="0.80">
         </div>
         <div class="ctrl">
-          <label><span>Ставка налога<i>t</i></span><b id="v_t">0.20</b></label>
+          <label><span><span data-i18n="p_t">Ставка налога</span><i>t</i></span><b id="v_t">0.20</b></label>
           <input type="range" id="s_t" min="0" max="0.50" step="0.01" value="0.20">
         </div>
         <div class="ctrl">
-          <label><span>Склонность к импорту<i>m</i></span><b id="v_m">0.15</b></label>
+          <label><span><span data-i18n="p_m">Склонность к импорту</span><i>m</i></span><b id="v_m">0.15</b></label>
           <input type="range" id="s_m" min="0" max="0.50" step="0.01" value="0.15">
         </div>
         <div class="ctrl">
-          <label><span>Госрасходы<i>G</i></span><b id="v_G">15.0</b></label>
+          <label><span><span data-i18n="p_G">Госрасходы</span><i>G</i></span><b id="v_G">15.0</b></label>
           <input type="range" id="s_G" min="0" max="45" step="0.5" value="15">
         </div>
         <div class="ctrl">
-          <label><span>Автономные инвестиции<i>I₀</i></span><b id="v_I">20.0</b></label>
+          <label><span><span data-i18n="p_I">Автономные инвестиции</span><i>I₀</i></span><b id="v_I">20.0</b></label>
           <input type="range" id="s_I" min="0" max="45" step="0.5" value="20">
         </div>
         <div class="ctrl">
-          <label><span>Процентная ставка<i>r, %</i></span><b id="v_r">5.0</b></label>
+          <label><span><span data-i18n="p_r">Процентная ставка</span><i>r, %</i></span><b id="v_r">5.0</b></label>
           <input type="range" id="s_r" min="0" max="14" step="0.1" value="5">
         </div>
         <div class="ctrl">
-          <label><span>Экспорт<i>X</i></span><b id="v_X">10.0</b></label>
+          <label><span><span data-i18n="p_X">Экспорт</span><i>X</i></span><b id="v_X">10.0</b></label>
           <input type="range" id="s_X" min="0" max="45" step="0.5" value="10">
         </div>
       </div>
 
       <div class="card section">
-        <h2>Потоки</h2>
+        <h2 data-i18n="flows">Потоки</h2>
         <div class="grid">
-          <div class="ro"><i class="dot" data-c="blue"></i><div><span>Потребление</span><b id="r_C">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="purple"></i><div><span>Сбережения</span><b id="r_S">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Налоги</span><b id="r_T">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Госрасходы</span><b id="r_G">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="purple"></i><div><span>Инвестиции</span><b id="r_I">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="red"></i><div><span>Импорт</span><b id="r_M">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="green"></i><div><span>Экспорт</span><b id="r_X">—</b></div></div>
-          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Сальдо бюджета T − G</span><b id="r_B">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="blue"></i><div><span data-i18n="f_C">Потребление</span><b id="r_C">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="purple"></i><div><span data-i18n="f_S">Сбережения</span><b id="r_S">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span data-i18n="f_T">Налоги</span><b id="r_T">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span data-i18n="f_G">Госрасходы</span><b id="r_G">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="purple"></i><div><span data-i18n="f_I">Инвестиции</span><b id="r_I">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="red"></i><div><span data-i18n="f_M">Импорт</span><b id="r_M">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="green"></i><div><span data-i18n="f_X">Экспорт</span><b id="r_X">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span data-i18n="f_B">Бюджет T − G</span><b id="r_B">—</b></div></div>
         </div>
       </div>
 
       <div class="btns">
         <button class="primary" id="btnPause">Пауза</button>
-        <button class="secondary" id="btnReset">Сброс</button>
+        <button class="secondary" id="btnReset" data-i18n="reset">Сброс</button>
       </div>
     </aside>
   </div>
 
-  <footer>Модель считается на сервере FastAPI и транслируется по WebSocket.</footer>
+  <footer data-i18n="footer">Модель считается на сервере FastAPI и транслируется по WebSocket.</footer>
 </div>
 
 <script>
 (function () {
   'use strict';
+
+  /* ===================== ЯЗЫК ===================== */
+  const I18N = {
+    ru: {
+      eyebrow: 'Гидравлическая модель экономики',
+      sub: 'Компьютер Филлипса, где деньги текут как вода. Уровень в резервуаре — запас, поток — расход.',
+      income: 'Национальный доход', eq: 'Равновесие',
+      params: 'Параметры', flows: 'Потоки',
+      p_c: 'Склонность к потреблению', p_t: 'Ставка налога', p_m: 'Склонность к импорту',
+      p_G: 'Госрасходы', p_I: 'Автономные инвестиции', p_r: 'Процентная ставка', p_X: 'Экспорт',
+      f_C: 'Потребление', f_S: 'Сбережения', f_T: 'Налоги', f_G: 'Госрасходы',
+      f_I: 'Инвестиции', f_M: 'Импорт', f_X: 'Экспорт', f_B: 'Бюджет T − G',
+      pause: 'Пауза', resume: 'Продолжить', reset: 'Сброс',
+      footer: 'Модель считается на сервере FastAPI и транслируется по WebSocket.',
+      st_conn: 'соединение…', st_ok: 'В сети', st_pause: 'Пауза', st_err: 'Ошибка', st_off: 'Нет связи',
+      c_pump: 'Насос', c_income: 'Доход', c_tax: 'Налоги', c_sav: 'Сбережения', c_cons: 'Потребление',
+      c_imp: 'Импорт', c_exp: 'Экспорт', c_ad: 'Совокупный спрос',
+      c_gov: 'Государство', c_surplus: 'Профицит', c_debt: 'Долг',
+      c_savT: 'Сбережения', c_wealth: 'Богатство', c_borrow: 'Займы',
+      title: 'MONIAC — гидравлический компьютер Филлипса'
+    },
+    en: {
+      eyebrow: 'A hydraulic model of the economy',
+      sub: 'Phillips’ machine, where money flows like water. The level in a tank is a stock; a stream is a flow.',
+      income: 'National income', eq: 'Equilibrium',
+      params: 'Parameters', flows: 'Flows',
+      p_c: 'Propensity to consume', p_t: 'Tax rate', p_m: 'Propensity to import',
+      p_G: 'Government spending', p_I: 'Autonomous investment', p_r: 'Interest rate', p_X: 'Exports',
+      f_C: 'Consumption', f_S: 'Saving', f_T: 'Taxes', f_G: 'Gov. spending',
+      f_I: 'Investment', f_M: 'Imports', f_X: 'Exports', f_B: 'Budget T − G',
+      pause: 'Pause', resume: 'Resume', reset: 'Reset',
+      footer: 'The model runs on a FastAPI server and streams over WebSocket.',
+      st_conn: 'connecting…', st_ok: 'Online', st_pause: 'Paused', st_err: 'Error', st_off: 'Offline',
+      c_pump: 'Pump', c_income: 'Income', c_tax: 'Taxes', c_sav: 'Saving', c_cons: 'Consumption',
+      c_imp: 'Imports', c_exp: 'Exports', c_ad: 'Aggregate demand',
+      c_gov: 'Government', c_surplus: 'Surplus', c_debt: 'Debt',
+      c_savT: 'Private sector', c_wealth: 'Wealth', c_borrow: 'Borrowing',
+      title: 'MONIAC — Phillips hydraulic computer'
+    }
+  };
+  let lang = (function () {
+    try { const v = localStorage.getItem('moniac-lang'); if (v === 'ru' || v === 'en') return v; } catch (e) {}
+    return /^ru|^uk|^be|^kk/i.test(navigator.language || '') ? 'ru' : 'en';
+  })();
+  const tr = k => (I18N[lang] && I18N[lang][k]) || I18N.ru[k] || k;
 
   /* ===================== ТЕМА ===================== */
   const THEMES = {
@@ -375,7 +440,7 @@
   // Бак хранит накопленное сальдо: ноль посередине, плюс — вверх, минус — вниз.
   const STOCK_SCALE = 300;
   function fmtStock(v) {
-    return Math.round(Math.abs(v)).toLocaleString('ru-RU');
+    return Math.round(Math.abs(v)).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US');
   }
   function drawTank(t, level, hex, title, posLabel, negLabel) {
     const midY = t.y + t.h / 2;
@@ -453,7 +518,7 @@
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -11); ctx.stroke();
     }
     ctx.restore();
-    txt('Насос', 70, pY, 11, K.text2, 'left', 500);
+    txt(tr('c_pump'), 70, pY, 11, K.text2, 'left', 500);
 
     /* ---- падающие потоки (рисуем до резервуаров) ---- */
     const yTop = TOP.y + TOP.h;
@@ -488,12 +553,12 @@
     tg.addColorStop(0, rgba(K.blue, 0.92));
     tg.addColorStop(1, rgba(K.blue, 0.78));
     ctx.fillStyle = tg; ctx.fill();
-    txt('Доход', TOP.x + 22, TOP.y + TOP.h / 2, 13, 'rgba(255,255,255,0.8)', 'left', 500);
+    txt(tr('c_income'), TOP.x + 22, TOP.y + TOP.h / 2, 13, 'rgba(255,255,255,0.8)', 'left', 500);
     txt('Y = ' + sim.Y.toFixed(1), TOP.x + TOP.w - 22, TOP.y + TOP.h / 2, 17, '#ffffff', 'right', 600);
 
     /* ---- резервуары ---- */
-    drawTank(GT, sim.hGov, K.orange, 'Государство', 'Профицит', 'Долг');
-    drawTank(ST, sim.hSav, K.purple, 'Сбережения', 'Богатство', 'Займы');
+    drawTank(GT, sim.hGov, K.orange, tr('c_gov'), tr('c_surplus'), tr('c_debt'));
+    drawTank(ST, sim.hSav, K.purple, tr('c_savT'), tr('c_wealth'), tr('c_borrow'));
 
     /* ---- нижний резервуар ---- */
     rr(SU.x, SU.y, SU.w, SU.h, 16);
@@ -515,14 +580,14 @@
 
     /* ---- подписи ---- */
     const labY = yTop + 34;
-    txt('Налоги', L.cxT + 26, labY, 12, K.orange, 'left', 600);
-    txt('Сбережения', L.cxS + 26, labY, 12, K.purple, 'left', 600);
-    txt('Потребление', L.cxC + 26, labY, 12, K.blue, 'left', 600);
-    txt('Импорт', 640, L.jY - 26, 12, K.red, 'center', 600);
+    txt(tr('c_tax'), L.cxT + 26, labY, 12, K.orange, 'left', 600);
+    txt(tr('c_sav'), L.cxS + 26, labY, 12, K.purple, 'left', 600);
+    txt(tr('c_cons'), L.cxC + 26, labY, 12, K.blue, 'left', 600);
+    txt(tr('c_imp'), 640, L.jY - 26, 12, K.red, 'center', 600);
     txt('G', L.cxT + 22, 440, 13, K.orange, 'left', 600);
     txt('I', L.cxS + 22, 440, 13, K.purple, 'left', 600);
-    txt('Экспорт', 345 + 36, 620, 12, K.green, 'left', 600);
-    txt('Совокупный спрос', SU.x + 18, SU.y + 16, 11, K.text2, 'left', 500);
+    txt(tr('c_exp'), 345 + 36, 620, 12, K.green, 'left', 600);
+    txt(tr('c_ad'), SU.x + 18, SU.y + 16, 11, K.text2, 'left', 500);
   }
 
   /* ===================== UI / WEBSOCKET ===================== */
@@ -566,11 +631,30 @@
     paintTrack(el);
   });
 
-  function setStatus(text, cls) {
-    const s = $('status');
-    s.textContent = text;
-    s.className = 'status' + (cls ? ' ' + cls : '');
+  let statusKey = 'st_conn', statusCls = '';
+  function setStatus(key, cls) {
+    statusKey = key; statusCls = cls || '';
+    const el = $('status');
+    el.textContent = tr(key);
+    el.className = 'status' + (statusCls ? ' ' + statusCls : '');
   }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.title = tr('title');
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n); });
+    $('btnPause').textContent = tr(paused ? 'resume' : 'pause');
+    document.querySelectorAll('.seg button').forEach(b => {
+      b.classList.toggle('on', b.dataset.lang === lang);
+      b.setAttribute('aria-pressed', b.dataset.lang === lang);
+    });
+    setStatus(statusKey, statusCls);
+  }
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    lang = b.dataset.lang;
+    try { localStorage.setItem('moniac-lang', lang); } catch (e) {}
+    applyLang();
+  }));
 
   function updateReadout() {
     $('r_Y').textContent = sim.Y.toFixed(1);
@@ -595,7 +679,7 @@
     ws.onopen = () => {
       wsReady = true;
       retryDelay = 500;
-      setStatus(paused ? 'Пауза' : 'В сети', paused ? '' : 'ok');
+      setStatus(paused ? 'st_pause' : 'st_ok', paused ? '' : 'ok');
       sendParams();
       if (paused) ws.send(JSON.stringify({ type: 'pause', value: true }));
     };
@@ -604,10 +688,10 @@
       try { msg = JSON.parse(ev.data); } catch (e) { return; }
       if (msg.type === 'state') { sim = msg; updateReadout(); }
     };
-    ws.onerror = () => setStatus('Ошибка', 'err');
+    ws.onerror = () => setStatus('st_err', 'err');
     ws.onclose = () => {
       wsReady = false;
-      setStatus('Нет связи', 'err');
+      setStatus('st_off', 'err');
       setTimeout(connect, retryDelay);
       retryDelay = Math.min(retryDelay * 2, 5000);
     };
@@ -615,17 +699,18 @@
 
   $('btnPause').addEventListener('click', () => {
     paused = !paused;
-    $('btnPause').textContent = paused ? 'Продолжить' : 'Пауза';
+    $('btnPause').textContent = tr(paused ? 'resume' : 'pause');
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'pause', value: paused }));
     }
-    if (wsReady) setStatus(paused ? 'Пауза' : 'В сети', paused ? '' : 'ok');
+    if (wsReady) setStatus(paused ? 'st_pause' : 'st_ok', paused ? '' : 'ok');
   });
   $('btnReset').addEventListener('click', () => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'reset' }));
   });
 
   function loop() { draw(); requestAnimationFrame(loop); }
+  applyLang();
   connect();
   loop();
 })();
