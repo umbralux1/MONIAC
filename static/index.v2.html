@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MONIAC</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --text-3: #86868b;
+    --hair: rgba(0,0,0,0.08);
+    --fill: rgba(120,120,128,0.12);
+    --fill-2: rgba(120,120,128,0.20);
+    --accent: #0071e3;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 28px rgba(0,0,0,0.06);
+    --ok: #34c759;
+    --err: #ff3b30;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --text-2: #a1a1a6;
+      --text-3: #8e8e93;
+      --hair: rgba(255,255,255,0.10);
+      --fill: rgba(120,120,128,0.24);
+      --fill-2: rgba(120,120,128,0.36);
+      --accent: #0a84ff;
+      --shadow: none;
+      --ok: #30d158;
+      --err: #ff453a;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                 "Helvetica Neue", "Inter", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 56px 32px 64px; }
+
+  header { margin-bottom: 40px; }
+  .eyebrow {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    letter-spacing: 0; margin-bottom: 6px;
+  }
+  h1 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+    font-size: clamp(32px, 4.4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+  }
+  .sub {
+    margin-top: 12px; max-width: 640px;
+    font-size: 17px; color: var(--text-2); letter-spacing: -0.015em;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 980px) { .app { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--hair);
+  }
+
+  .stage { padding: 12px; position: sticky; top: 20px; }
+  @media (max-width: 980px) { .stage { position: static; } }
+  canvas { display: block; width: 100%; height: auto; aspect-ratio: 720 / 660; border-radius: 14px; }
+
+  .panel { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ---- Hero Y ---- */
+  .hero { padding: 22px 24px 20px; }
+  .hero-top { display: flex; justify-content: space-between; align-items: center; }
+  .label { font-size: 13px; color: var(--text-3); font-weight: 500; }
+  .hero-val {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    font-size: 56px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.05;
+    margin-top: 4px; font-variant-numeric: tabular-nums;
+  }
+  .hero-eq {
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--hair);
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; color: var(--text-2);
+  }
+  .hero-eq b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 500; color: var(--text-3);
+    padding: 4px 10px 4px 8px; border-radius: 999px; background: var(--fill);
+  }
+  .status::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3);
+  }
+  .status.ok { color: var(--ok); }
+  .status.ok::before { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+  .status.err { color: var(--err); }
+  .status.err::before { background: var(--err); }
+
+  /* ---- Section ---- */
+  .section { padding: 20px 24px 8px; }
+  .section h2 {
+    font-size: 20px; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 6px;
+  }
+
+  .ctrl { padding: 14px 0; border-top: 1px solid var(--hair); }
+  .section h2 + .ctrl { border-top: none; padding-top: 8px; }
+  .ctrl label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px; color: var(--text); margin-bottom: 10px;
+  }
+  .ctrl label b {
+    font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text);
+    min-width: 44px; text-align: right;
+  }
+  .ctrl label i { font-style: normal; color: var(--text-3); margin-left: 4px; }
+
+  input[type=range] {
+    --p: 50%;
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 28px; background: transparent; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--accent) var(--p), var(--fill-2) var(--p));
+  }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--fill-2); }
+  input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px; margin-top: -10px; border-radius: 50%;
+    background: #fff; border: 0.5px solid rgba(0,0,0,0.04);
+    box-shadow: 0 0.5px 4px rgba(0,0,0,0.12), 0 6px 13px rgba(0,0,0,0.12);
+    transition: transform .15s ease;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 24px; height: 24px; border-radius: 50%; background: #fff; border: none;
+    box-shadow: 0 0.5px 4px rgba(0,0,0,0.12), 0 6px 13px rgba(0,0,0,0.12);
+  }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.08); }
+  input[type=range]:focus-visible { outline: none; }
+  input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+  /* ---- Readouts ---- */
+  .grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 4px 0 12px;
+  }
+  .ro { padding: 12px 0; border-top: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; }
+  .ro:nth-child(-n+2) { border-top: none; }
+  .ro .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .ro span { font-size: 13px; color: var(--text-2); display: block; }
+  .ro b { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+  /* ---- Buttons ---- */
+  .btns { display: flex; gap: 12px; }
+  button {
+    flex: 1; height: 44px; border-radius: 999px; border: none;
+    font-family: inherit; font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
+    cursor: pointer; transition: background .2s ease, transform .1s ease, opacity .2s;
+  }
+  button:active { transform: scale(0.98); }
+  button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
+  .primary { background: var(--accent); color: #fff; }
+  .primary:hover { opacity: 0.88; }
+  .secondary { background: var(--fill); color: var(--accent); }
+  .secondary:hover { background: var(--fill-2); }
+
+  footer { margin-top: 28px; font-size: 12px; color: var(--text-3); text-align: center; }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 32px 16px 40px; }
+    .hero-val { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Гидравлическая модель экономики</div>
+    <h1>MONIAC</h1>
+    <p class="sub">Компьютер Филлипса, где деньги текут как вода. Уровень в резервуаре — запас, поток — расход.</p>
+  </header>
+
+  <div class="app">
+    <div class="card stage"><canvas id="c"></canvas></div>
+
+    <aside class="panel">
+      <div class="card hero">
+        <div class="hero-top">
+          <span class="label">Национальный доход</span>
+          <span class="status" id="status">соединение…</span>
+        </div>
+        <div class="hero-val" id="r_Y">—</div>
+        <div class="hero-eq">
+          <span>Равновесие Y* = k·(G + I + X) <b id="r_ys">—</b></span>
+          <span>k <b id="r_k">—</b></span>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h2>Параметры</h2>
+        <div class="ctrl">
+          <label><span>Склонность к потреблению<i>c</i></span><b id="v_c">0.80</b></label>
+          <input type="range" id="s_c" min="0.50" max="0.95" step="0.01" value="0.80">
+        </div>
+        <div class="ctrl">
+          <label><span>Ставка налога<i>t</i></span><b id="v_t">0.20</b></label>
+          <input type="range" id="s_t" min="0" max="0.50" step="0.01" value="0.20">
+        </div>
+        <div class="ctrl">
+          <label><span>Склонность к импорту<i>m</i></span><b id="v_m">0.15</b></label>
+          <input type="range" id="s_m" min="0" max="0.50" step="0.01" value="0.15">
+        </div>
+        <div class="ctrl">
+          <label><span>Госрасходы<i>G</i></span><b id="v_G">15.0</b></label>
+          <input type="range" id="s_G" min="0" max="45" step="0.5" value="15">
+        </div>
+        <div class="ctrl">
+          <label><span>Автономные инвестиции<i>I₀</i></span><b id="v_I">20.0</b></label>
+          <input type="range" id="s_I" min="0" max="45" step="0.5" value="20">
+        </div>
+        <div class="ctrl">
+          <label><span>Процентная ставка<i>r, %</i></span><b id="v_r">5.0</b></label>
+          <input type="range" id="s_r" min="0" max="14" step="0.1" value="5">
+        </div>
+        <div class="ctrl">
+          <label><span>Экспорт<i>X</i></span><b id="v_X">10.0</b></label>
+          <input type="range" id="s_X" min="0" max="45" step="0.5" value="10">
+        </div>
+      </div>
+
+      <div class="card section">
+        <h2>Потоки</h2>
+        <div class="grid">
+          <div class="ro"><i class="dot" data-c="blue"></i><div><span>Потребление</span><b id="r_C">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="purple"></i><div><span>Сбережения</span><b id="r_S">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Налоги</span><b id="r_T">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Госрасходы</span><b id="r_G">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="purple"></i><div><span>Инвестиции</span><b id="r_I">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="red"></i><div><span>Импорт</span><b id="r_M">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="green"></i><div><span>Экспорт</span><b id="r_X">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Сальдо бюджета T − G</span><b id="r_B">—</b></div></div>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" id="btnPause">Пауза</button>
+        <button class="secondary" id="btnReset">Сброс</button>
+      </div>
+    </aside>
+  </div>
+
+  <footer>Модель считается на сервере FastAPI и транслируется по WebSocket.</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================== ТЕМА ===================== */
+  const THEMES = {
+    light: {
+      bg: '#ffffff', pipe: '#f2f2f5', glass: '#d2d2d7', tick: '#e5e5ea',
+      text: '#1d1d1f', text2: '#86868b', inner: '#ffffff',
+      blue: '#0071e3', orange: '#ff9500', purple: '#af52de', red: '#ff3b30', green: '#34c759'
+    },
+    dark: {
+      bg: '#1c1c1e', pipe: '#2c2c2e', glass: '#48484a', tick: '#3a3a3c',
+      text: '#f5f5f7', text2: '#8e8e93', inner: '#1c1c1e',
+      blue: '#0a84ff', orange: '#ff9f0a', purple: '#bf5af2', red: '#ff453a', green: '#30d158'
+    }
+  };
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  let K = mq.matches ? THEMES.dark : THEMES.light;
+  function applyDots() {
+    document.querySelectorAll('.dot').forEach(d => { d.style.background = K[d.dataset.c]; });
+  }
+  (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(e => {
+    K = e.matches ? THEMES.dark : THEMES.light; applyDots();
+  });
+  applyDots();
+
+  function rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  /* ===================== КАНВАС ===================== */
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = 720, H = 660;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  ctx.scale(DPR, DPR);
+
+  const FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif';
+
+  /* ===================== СОСТОЯНИЕ ===================== */
+  const P = { c: 0.80, t: 0.20, m: 0.15, G: 15, I0: 20, r: 5, X: 10 };
+  let sim = {
+    hGov: 0, hSav: 0, hSump: 20, Y: 60, tSec: 0,
+    flows: { T:0, S:0, C:0, Cd:0, M:0, Gout:0, Iout:0, X:0 },
+    multiplier: 0, yStar: 0
+  };
+
+  /* ===================== ГЕОМЕТРИЯ ===================== */
+  const L = {
+    top:  { x: 80,  y: 60,  w: 580, h: 52 },
+    sump: { x: 90,  y: 505, w: 510, h: 70 },
+    govT: { x: 190, y: 215, w: 100, h: 150 },
+    savT: { x: 400, y: 215, w: 100, h: 150 },
+    cxT: 240, cxS: 450, cxC: 590,
+    jY: 262
+  };
+  const wf = v => Math.max(0, Math.min(36, v * 0.42));
+
+  /* ===================== ПРИМИТИВЫ ===================== */
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function txt(s, x, y, size, color, align, weight) {
+    ctx.font = (weight || 500) + ' ' + (size || 12) + 'px ' + FONT;
+    ctx.fillStyle = color || K.text2;
+    ctx.textAlign = align || 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s, x, y);
+  }
+  function drawStream(cx, y1, y2, w, phase, hex, alpha) {
+    if (w < 1 || y2 <= y1 + 1) return;
+    const x = cx - w / 2;
+    rr(x, y1, w, y2 - y1, Math.min(w / 2, 6));
+    ctx.fillStyle = rgba(hex, alpha == null ? 0.85 : alpha);
+    ctx.fill();
+    // мягкий бегущий блик
+    const period = 54, speed = 110;
+    const off = (sim.tSec * speed + phase * 7) % period;
+    ctx.save();
+    rr(x, y1, w, y2 - y1, Math.min(w / 2, 6)); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    for (let yy = y1 - period + off; yy < y2; yy += period) {
+      ctx.fillRect(x, yy, w, 14);
+    }
+    ctx.restore();
+  }
+  // Бак хранит накопленное сальдо: ноль посередине, плюс — вверх, минус — вниз.
+  const STOCK_SCALE = 300;
+  function fmtStock(v) {
+    return Math.round(Math.abs(v)).toLocaleString('ru-RU');
+  }
+  function drawTank(t, level, hex, title, posLabel, negLabel) {
+    const midY = t.y + t.h / 2;
+    const frac = Math.tanh(level / STOCK_SCALE);         // −1…1, мягкое насыщение
+    const hFill = Math.abs(frac) * (t.h / 2);
+    const neg = level < 0;
+    const col = neg ? K.red : hex;
+
+    rr(t.x, t.y, t.w, t.h, 14);
+    ctx.fillStyle = K.pipe; ctx.fill();
+
+    if (hFill > 0.5) {
+      ctx.save();
+      rr(t.x, t.y, t.w, t.h, 14); ctx.clip();
+      const edge = neg ? midY + hFill : midY - hFill;
+      ctx.beginPath();
+      ctx.moveTo(t.x, midY);
+      ctx.lineTo(t.x, edge);
+      for (let px = 0; px <= t.w; px += 3) {
+        ctx.lineTo(t.x + px, edge + Math.sin(px * 0.08 + sim.tSec * 2.2) * Math.min(1.6, hFill / 4));
+      }
+      ctx.lineTo(t.x + t.w, midY);
+      ctx.closePath();
+      const g = ctx.createLinearGradient(0, midY, 0, edge);
+      g.addColorStop(0, rgba(col, 0.70));
+      g.addColorStop(1, rgba(col, 0.95));
+      ctx.fillStyle = g; ctx.fill();
+      ctx.restore();
+    }
+
+    // нулевая линия
+    ctx.strokeStyle = K.glass; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(t.x + 6, Math.round(midY) + 0.5); ctx.lineTo(t.x + t.w - 6, Math.round(midY) + 0.5); ctx.stroke();
+    ctx.setLineDash([]);
+    txt('0', t.x + t.w + 8, midY, 10, K.text2, 'left', 500);
+
+    txt(title, t.x - 12, t.y + 14, 12, K.text, 'right', 600);
+    txt((neg ? negLabel : posLabel) + ' ' + fmtStock(level), t.x - 12, t.y + 32, 11, neg ? K.red : K.text2, 'right', 500);
+  }
+
+  /* ===================== РЕНДЕР ===================== */
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = K.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const TOP = L.top, SU = L.sump, GT = L.govT, ST = L.savT;
+    const F = sim.flows;
+    const tSec = sim.tSec;
+
+    /* ---- магистраль насоса ---- */
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(SU.x + 4, SU.y + SU.h / 2); ctx.lineTo(40, SU.y + SU.h / 2);
+    ctx.lineTo(40, TOP.y + TOP.h / 2);  ctx.lineTo(TOP.x + 4, TOP.y + TOP.h / 2);
+    ctx.strokeStyle = K.pipe; ctx.lineWidth = 22; ctx.stroke();
+    ctx.strokeStyle = rgba(K.blue, 0.55); ctx.lineWidth = 4;
+    ctx.setLineDash([2, 14]);
+    ctx.lineDashOffset = -((tSec * 60) % 16);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* ---- насос ---- */
+    const pY = 300;
+    ctx.beginPath(); ctx.arc(40, pY, 20, 0, Math.PI * 2);
+    ctx.fillStyle = K.inner; ctx.fill();
+    ctx.strokeStyle = K.glass; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.save();
+    ctx.translate(40, pY);
+    ctx.rotate(tSec * 2.2);
+    ctx.strokeStyle = K.blue; ctx.lineWidth = 2.5;
+    for (let i = 0; i < 3; i++) {
+      ctx.rotate(Math.PI * 2 / 3);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -11); ctx.stroke();
+    }
+    ctx.restore();
+    txt('Насос', 70, pY, 11, K.text2, 'left', 500);
+
+    /* ---- падающие потоки (рисуем до резервуаров) ---- */
+    const yTop = TOP.y + TOP.h;
+    drawStream(L.cxT, yTop, GT.y, wf(F.T), 0,  K.orange);
+    drawStream(L.cxS, yTop, ST.y, wf(F.S), 11, K.purple);
+    drawStream(L.cxC, yTop, L.jY, wf(F.C), 23, K.blue);
+    drawStream(L.cxC, L.jY, SU.y, wf(F.Cd), 23, K.blue);
+    drawStream(L.cxT, GT.y + GT.h, SU.y, wf(F.Gout), 5,  K.orange, 0.6);
+    drawStream(L.cxS, ST.y + ST.h, SU.y, wf(F.Iout), 17, K.purple, 0.6);
+
+    /* ---- импорт ---- */
+    const wM = wf(F.M);
+    if (wM > 1) {
+      const x0 = L.cxC, x1 = 690;
+      rr(x0, L.jY - wM / 2, x1 - x0 - 10, wM, Math.min(wM / 2, 6));
+      ctx.fillStyle = rgba(K.red, 0.8); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x1 + 6, L.jY);
+      ctx.lineTo(x1 - 10, L.jY - wM / 2 - 5);
+      ctx.lineTo(x1 - 10, L.jY + wM / 2 + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    /* ---- экспорт ---- */
+    const wX = wf(F.X);
+    drawStream(345, SU.y + SU.h, 648, wX, 3, K.green, 0.8);
+
+    /* ---- верхний резервуар (доход) ---- */
+    rr(TOP.x, TOP.y, TOP.w, TOP.h, 16);
+    const tg = ctx.createLinearGradient(TOP.x, 0, TOP.x + TOP.w, 0);
+    tg.addColorStop(0, rgba(K.blue, 0.92));
+    tg.addColorStop(1, rgba(K.blue, 0.78));
+    ctx.fillStyle = tg; ctx.fill();
+    txt('Доход', TOP.x + 22, TOP.y + TOP.h / 2, 13, 'rgba(255,255,255,0.8)', 'left', 500);
+    txt('Y = ' + sim.Y.toFixed(1), TOP.x + TOP.w - 22, TOP.y + TOP.h / 2, 17, '#ffffff', 'right', 600);
+
+    /* ---- резервуары ---- */
+    drawTank(GT, sim.hGov, K.orange, 'Государство', 'Профицит', 'Долг');
+    drawTank(ST, sim.hSav, K.purple, 'Сбережения', 'Богатство', 'Займы');
+
+    /* ---- нижний резервуар ---- */
+    rr(SU.x, SU.y, SU.w, SU.h, 16);
+    ctx.fillStyle = K.pipe; ctx.fill();
+    ctx.save();
+    rr(SU.x, SU.y, SU.w, SU.h, 16); ctx.clip();
+    const sw = (1 - Math.exp(-Math.max(0, sim.hSump) / 45)) * SU.h;
+    const sy = SU.y + SU.h - sw;
+    ctx.beginPath();
+    ctx.moveTo(SU.x, SU.y + SU.h);
+    ctx.lineTo(SU.x, sy);
+    for (let px = 0; px <= SU.w; px += 4) {
+      ctx.lineTo(SU.x + px, sy + Math.sin(px * 0.045 + tSec * 2) * 2);
+    }
+    ctx.lineTo(SU.x + SU.w, SU.y + SU.h);
+    ctx.closePath();
+    ctx.fillStyle = rgba(K.blue, 0.85); ctx.fill();
+    ctx.restore();
+
+    /* ---- подписи ---- */
+    const labY = yTop + 34;
+    txt('Налоги', L.cxT + 26, labY, 12, K.orange, 'left', 600);
+    txt('Сбережения', L.cxS + 26, labY, 12, K.purple, 'left', 600);
+    txt('Потребление', L.cxC + 26, labY, 12, K.blue, 'left', 600);
+    txt('Импорт', 640, L.jY - 26, 12, K.red, 'center', 600);
+    txt('G', L.cxT + 22, 440, 13, K.orange, 'left', 600);
+    txt('I', L.cxS + 22, 440, 13, K.purple, 'left', 600);
+    txt('Экспорт', 345 + 36, 620, 12, K.green, 'left', 600);
+    txt('Совокупный спрос', SU.x + 18, SU.y + 16, 11, K.text2, 'left', 500);
+  }
+
+  /* ===================== UI / WEBSOCKET ===================== */
+  const ui = {};
+  ['c', 't', 'm', 'G', 'I', 'r', 'X'].forEach(k => {
+    ui['s_' + k] = document.getElementById('s_' + k);
+    ui['v_' + k] = document.getElementById('v_' + k);
+  });
+  const KEYMAP = { c: 'c', t: 't', m: 'm', G: 'G', I: 'I0', r: 'r', X: 'X' };
+  const FMT = { c: 2, t: 2, m: 2, G: 1, I: 1, r: 1, X: 1 };
+  const $ = id => document.getElementById(id);
+
+  let ws = null;
+  let wsReady = false;
+  let paused = false;
+  let pendingParams = null;
+
+  function sendParams() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'params', data: P }));
+  }
+  function scheduleParams() {
+    if (pendingParams) return;
+    pendingParams = setTimeout(() => { pendingParams = null; sendParams(); }, 60);
+  }
+  function paintTrack(el) {
+    const p = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--p', p + '%');
+  }
+
+  Object.keys(KEYMAP).forEach(k => {
+    const el = ui['s_' + k];
+    el.addEventListener('input', () => {
+      const val = parseFloat(el.value);
+      P[KEYMAP[k]] = val;
+      ui['v_' + k].textContent = val.toFixed(FMT[k]);
+      paintTrack(el);
+      scheduleParams();
+    });
+    ui['v_' + k].textContent = parseFloat(el.value).toFixed(FMT[k]);
+    paintTrack(el);
+  });
+
+  function setStatus(text, cls) {
+    const s = $('status');
+    s.textContent = text;
+    s.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function updateReadout() {
+    $('r_Y').textContent = sim.Y.toFixed(1);
+    $('r_C').textContent = sim.flows.Cd.toFixed(1);
+    $('r_S').textContent = sim.flows.S.toFixed(1);
+    $('r_T').textContent = sim.flows.T.toFixed(1);
+    $('r_I').textContent = sim.flows.Iout.toFixed(1);
+    $('r_G').textContent = sim.flows.Gout.toFixed(1);
+    $('r_M').textContent = sim.flows.M.toFixed(1);
+    $('r_X').textContent = sim.flows.X.toFixed(1);
+    $('r_k').textContent = sim.multiplier ? sim.multiplier.toFixed(2) : '—';
+    $('r_ys').textContent = sim.yStar ? sim.yStar.toFixed(1) : '—';
+    const B = sim.flows.T - sim.flows.Gout;
+    $('r_B').textContent = (B > 0 ? '+' : '') + B.toFixed(1);
+    $('r_B').style.color = B < -0.05 ? K.red : '';
+  }
+
+  let retryDelay = 500;
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+    ws.onopen = () => {
+      wsReady = true;
+      retryDelay = 500;
+      setStatus(paused ? 'Пауза' : 'В сети', paused ? '' : 'ok');
+      sendParams();
+      if (paused) ws.send(JSON.stringify({ type: 'pause', value: true }));
+    };
+    ws.onmessage = ev => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      if (msg.type === 'state') { sim = msg; updateReadout(); }
+    };
+    ws.onerror = () => setStatus('Ошибка', 'err');
+    ws.onclose = () => {
+      wsReady = false;
+      setStatus('Нет связи', 'err');
+      setTimeout(connect, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, 5000);
+    };
+  }
+
+  $('btnPause').addEventListener('click', () => {
+    paused = !paused;
+    $('btnPause').textContent = paused ? 'Продолжить' : 'Пауза';
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'pause', value: paused }));
+    }
+    if (wsReady) setStatus(paused ? 'Пауза' : 'В сети', paused ? '' : 'ok');
+  });
+  $('btnReset').addEventListener('click', () => {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'reset' }));
+  });
+
+  function loop() { draw(); requestAnimationFrame(loop); }
+  connect();
+  loop();
+})();
+</script>
+</body>
+</html>
