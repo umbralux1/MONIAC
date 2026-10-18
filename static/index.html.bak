@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MONIAC — гидравлическая модель экономики</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #060d18; color: #cfe8ff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 48px; }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 3px; letter-spacing: .3px; }
+  .sub { font-size: 12.5px; color: #5d86ad; margin: 0 0 20px; line-height: 1.5; }
+  .app { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+  .stage { flex: 1 1 560px; min-width: 300px; }
+  canvas {
+    width: 100%; height: auto; display: block; border-radius: 16px;
+    background: #0b1a2e; border: 1px solid #16304d;
+    box-shadow: 0 20px 60px -30px #000;
+  }
+  .panel { flex: 0 0 318px; display: flex; flex-direction: column; gap: 13px; }
+  .card {
+    background: #0b1a2e; border: 1px solid #16304d; border-radius: 14px; padding: 14px;
+  }
+  .card h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.1px;
+    color: #5d86ad; margin: 0 0 11px; font-weight: 600;
+  }
+  .ctrl { margin-bottom: 11px; }
+  .ctrl:last-child { margin-bottom: 0; }
+  .ctrl label {
+    display: flex; justify-content: space-between; font-size: 12px;
+    color: #9dc0dd; margin-bottom: 5px;
+  }
+  .ctrl label b { color: #56ccf2; font-variant-numeric: tabular-nums; font-weight: 600; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: #16304d; border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+    background: #56ccf2; cursor: pointer; border: 2px solid #0b1a2e;
+    box-shadow: 0 0 8px #56ccf288;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%; background: #56ccf2;
+    cursor: pointer; border: 2px solid #0b1a2e;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
+  .ro { display: flex; flex-direction: column; gap: 1px; }
+  .ro span { font-size: 10.5px; color: #5d86ad; }
+  .ro b {
+    font-size: 14px; font-variant-numeric: tabular-nums;
+    color: #cfe8ff; font-weight: 600;
+  }
+  .eq {
+    font-size: 13px; text-align: center; color: #56ccf2; letter-spacing: .4px;
+    padding: 9px; background: #08182b; border-radius: 9px; margin-top: 2px;
+  }
+  .eq small { display: block; color: #4d7599; font-size: 10.5px; margin-top: 4px; letter-spacing: 0; }
+  .btns { display: flex; gap: 8px; }
+  button {
+    flex: 1; padding: 9px; border-radius: 9px; border: 1px solid #1d3d60;
+    background: #102439; color: #9dc0dd; font-size: 12px; cursor: pointer;
+    font-family: inherit; transition: .15s;
+  }
+  button:hover { background: #16304d; color: #cfe8ff; }
+  .status {
+    font-size: 11px; color: #4d7599; text-align: center; padding: 4px;
+  }
+  .status.ok { color: #4ade80; }
+  .status.err { color: #ef4444; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MONIAC — гидравлический компьютер Филлипса</h1>
+  <p class="sub">Деньги ведут себя как вода: уровень в резервуаре = запас, поток = расход.
+  Сервер на FastAPI считает дифференциальные уравнения, клиент рисует анимацию.</p>
+
+  <div class="app">
+    <div class="stage"><canvas id="c"></canvas></div>
+
+    <aside class="panel">
+      <div class="card">
+        <h2>Параметры экономики</h2>
+
+        <div class="ctrl">
+          <label>Склонность к потреблению (c) <b id="v_c">0.80</b></label>
+          <input type="range" id="s_c" min="0.50" max="0.95" step="0.01" value="0.80">
+        </div>
+        <div class="ctrl">
+          <label>Ставка налога (t) <b id="v_t">0.20</b></label>
+          <input type="range" id="s_t" min="0" max="0.50" step="0.01" value="0.20">
+        </div>
+        <div class="ctrl">
+          <label>Склонность к импорту (m) <b id="v_m">0.15</b></label>
+          <input type="range" id="s_m" min="0" max="0.50" step="0.01" value="0.15">
+        </div>
+        <div class="ctrl">
+          <label>Госрасходы (G) <b id="v_G">15.0</b></label>
+          <input type="range" id="s_G" min="0" max="45" step="0.5" value="15">
+        </div>
+        <div class="ctrl">
+          <label>Автономные инвестиции (I₀) <b id="v_I">20.0</b></label>
+          <input type="range" id="s_I" min="0" max="45" step="0.5" value="20">
+        </div>
+        <div class="ctrl">
+          <label>Процентная ставка (r) <b id="v_r">5.0</b></label>
+          <input type="range" id="s_r" min="0" max="14" step="0.1" value="5">
+        </div>
+        <div class="ctrl">
+          <label>Экспорт (X) <b id="v_X">10.0</b></label>
+          <input type="range" id="s_X" min="0" max="45" step="0.5" value="10">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Показатели</h2>
+        <div class="grid">
+          <div class="ro"><span>Доход Y</span><b id="r_Y">—</b></div>
+          <div class="ro"><span>Потребление C</span><b id="r_C">—</b></div>
+          <div class="ro"><span>Сбережения S</span><b id="r_S">—</b></div>
+          <div class="ro"><span>Налоги T</span><b id="r_T">—</b></div>
+          <div class="ro"><span>Инвестиции I</span><b id="r_I">—</b></div>
+          <div class="ro"><span>Госрасходы G</span><b id="r_G">—</b></div>
+          <div class="ro"><span>Импорт M</span><b id="r_M">—</b></div>
+          <div class="ro"><span>Экспорт X</span><b id="r_X">—</b></div>
+        </div>
+        <div class="eq" style="margin-top:11px">
+          Y = C + I + G + (X − M)
+          <small>Мультипликатор = <span id="r_k">—</span></small>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button id="btnPause">Пауза</button>
+        <button id="btnReset">Сброс</button>
+      </div>
+      <div class="status" id="status">соединение…</div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================== КАНВАС ===================== */
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = 720, H = 660;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  ctx.scale(DPR, DPR);
+
+  /* ===================== СОСТОЯНИЕ КЛИЕНТА ===================== */
+  // Параметры — зеркало серверных (для слайдеров)
+  const P = { c: 0.80, t: 0.20, m: 0.15, G: 15, I0: 20, r: 5, X: 10 };
+
+  // Последний снимок с сервера
+  let sim = {
+    hGov: 22, hSav: 22, hSump: 20, Y: 60, tSec: 0,
+    flows: { T:0, S:0, C:0, Cd:0, M:0, Gout:0, Iout:0, X:0 },
+    multiplier: 0
+  };
+
+  const TANK_H = 150, SUMP_H = 62;
+
+  /* ===================== ГЕОМЕТРИЯ ===================== */
+  const L = {
+    top:  { x: 70,  y: 45,  w: 590, h: 44 },
+    sump: { x: 80,  y: 505, w: 520, h: 62 },
+    govT: { x: 180, y: 205, w: 105, h: 150 },
+    savT: { x: 340, y: 205, w: 105, h: 150 },
+    cxT: 232.5, cxS: 392.5, cxC: 560,
+    jY: 250
+  };
+  const wf = v => Math.max(0, Math.min(72, v * 0.8));
+
+  /* ===================== ПРИМИТИВЫ ===================== */
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function txt(s, x, y, size, color, align, weight) {
+    ctx.font = (weight || '400') + ' ' + (size || 11) + 'px system-ui, sans-serif';
+    ctx.fillStyle = color || '#8fb8dc';
+    ctx.textAlign = align || 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s, x, y);
+  }
+  function drawStream(cx, y1, y2, w, phase, color) {
+    if (w < 1.2 || y2 <= y1 + 1) return;
+    const x = cx - w / 2;
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y1, w, y2 - y1);
+    const period = 46, speed = 130;
+    const off = (sim.tSec * speed + phase * 7) % period;
+    ctx.fillStyle = 'rgba(220,245,255,0.30)';
+    for (let yy = y1 - period + off; yy < y2; yy += period) {
+      const a = Math.max(y1, yy), b = Math.min(y2, yy + 11);
+      if (b > a) ctx.fillRect(x + 1.5, a, Math.max(0, w - 3), b - a);
+    }
+  }
+  function drawTankWater(t, level, rgb) {
+    if (level <= 0.6) return;
+    const top = t.y + t.h - level;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(t.x + 1.5, t.y + t.h - 1.5);
+    ctx.lineTo(t.x + 1.5, top);
+    for (let px = 0; px <= t.w - 3; px += 3) {
+      ctx.lineTo(t.x + 1.5 + px, top + Math.sin(px * 0.09 + sim.tSec * 2.6) * 2.2);
+    }
+    ctx.lineTo(t.x + t.w - 1.5, t.y + t.h - 1.5);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, top, 0, t.y + t.h);
+    g.addColorStop(0, 'rgba(' + rgb + ',0.85)');
+    g.addColorStop(1, 'rgba(' + rgb + ',0.55)');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* ===================== РЕНДЕР ===================== */
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0b1a2e';
+    ctx.fillRect(0, 0, W, H);
+
+    const TOP = L.top, SU = L.sump, GT = L.govT, ST = L.savT;
+    const F = sim.flows;
+    const tSec = sim.tSec;
+
+    /* ---- насосная магистраль ---- */
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(84, 540); ctx.lineTo(34, 540);
+    ctx.lineTo(34, 68);  ctx.lineTo(76, 68);
+    ctx.strokeStyle = '#12283f'; ctx.lineWidth = 30; ctx.stroke();
+    ctx.strokeStyle = 'rgba(86,204,242,0.45)'; ctx.lineWidth = 12;
+    ctx.setLineDash([9, 15]);
+    ctx.lineDashOffset = -((tSec * 95) % 24);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* ---- крыльчатка насоса ---- */
+    ctx.save();
+    ctx.translate(34, 300);
+    ctx.rotate(tSec * 2.6);
+    ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
+    for (let i = 0; i < 4; i++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -10); ctx.stroke();
+    }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(34, 300, 14, 0, Math.PI * 2);
+    ctx.strokeStyle = '#2a5a3a'; ctx.lineWidth = 2; ctx.stroke();
+
+    /* ---- верхний резервуар ---- */
+    const tg = ctx.createLinearGradient(0, TOP.y, 0, TOP.y + TOP.h);
+    tg.addColorStop(0, 'rgba(86,204,242,0.55)');
+    tg.addColorStop(1, 'rgba(30,110,180,0.80)');
+    rr(TOP.x + 2, TOP.y + 2, TOP.w - 4, TOP.h - 4, 8);
+    ctx.fillStyle = tg; ctx.fill();
+    rr(TOP.x, TOP.y, TOP.w, TOP.h, 10);
+    ctx.strokeStyle = '#1d3d60'; ctx.lineWidth = 2; ctx.stroke();
+
+    /* ---- сосуды ---- */
+    [GT, ST].forEach(t => {
+      rr(t.x, t.y, t.w, t.h, 8);
+      ctx.strokeStyle = '#1d3d60'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = 'rgba(29,61,96,0.65)'; ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i++) {
+        const yy = t.y + t.h * i / 4;
+        ctx.beginPath(); ctx.moveTo(t.x, yy); ctx.lineTo(t.x + 9, yy); ctx.stroke();
+      }
+    });
+
+    /* ---- вода в резервуарах ---- */
+    drawTankWater(GT, sim.hGov, '245,158,11');
+    drawTankWater(ST, sim.hSav, '167,139,250');
+
+    /* ---- вода в нижнем резервуаре ---- */
+    rr(SU.x, SU.y, SU.w, SU.h, 10);
+    ctx.save(); ctx.clip();
+    const sw = (sim.hSump / SUMP_H) * (SU.h - 4);
+    const sy = SU.y + SU.h - 2 - sw;
+    const sg = ctx.createLinearGradient(0, sy, 0, SU.y + SU.h);
+    sg.addColorStop(0, 'rgba(86,204,242,0.90)');
+    sg.addColorStop(1, 'rgba(30,110,180,0.70)');
+    ctx.beginPath();
+    ctx.moveTo(SU.x, SU.y + SU.h);
+    ctx.lineTo(SU.x, sy);
+    for (let px = 0; px <= SU.w; px += 4) {
+      ctx.lineTo(SU.x + px, sy + Math.sin(px * 0.05 + tSec * 2.2) * 2.5);
+    }
+    ctx.lineTo(SU.x + SU.w, SU.y + SU.h);
+    ctx.closePath();
+    ctx.fillStyle = sg; ctx.fill();
+    ctx.restore();
+    rr(SU.x, SU.y, SU.w, SU.h, 10);
+    ctx.strokeStyle = '#1d3d60'; ctx.lineWidth = 2; ctx.stroke();
+
+    /* ---- падающие потоки ---- */
+    const yTop = TOP.y + TOP.h;
+    drawStream(L.cxT, yTop, GT.y, wf(F.T), 0,  'rgba(245,158,11,0.75)');
+    drawStream(L.cxS, yTop, ST.y, wf(F.S), 11, 'rgba(167,139,250,0.75)');
+    drawStream(L.cxC, yTop, L.jY, wf(F.C), 23, 'rgba(86,204,242,0.78)');
+    drawStream(L.cxC, L.jY, SU.y, wf(F.Cd), 23, 'rgba(86,204,242,0.78)');
+
+    /* ---- сливы из резервуаров ---- */
+    drawStream(L.cxT, GT.y + GT.h, SU.y, wf(F.Gout), 5,  'rgba(245,158,11,0.50)');
+    drawStream(L.cxS, ST.y + ST.h, SU.y, wf(F.Iout), 17, 'rgba(167,139,250,0.50)');
+
+    /* ---- импорт (ветка вправо) ---- */
+    const wM = wf(F.M);
+    if (wM > 1.2) {
+      ctx.fillStyle = 'rgba(239,68,68,0.65)';
+      ctx.fillRect(L.cxC, L.jY - wM / 2, 700 - L.cxC - 14, wM);
+      ctx.beginPath();
+      ctx.moveTo(712, L.jY);
+      ctx.lineTo(694, L.jY - wM / 2 - 5);
+      ctx.lineTo(694, L.jY + wM / 2 + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    /* ---- экспорт (инъекция снизу) ---- */
+    const wX = wf(F.X);
+    drawStream(340, 648, SU.y + SU.h, wX, 3, 'rgba(74,222,128,0.65)');
+    if (wX > 1.2) {
+      ctx.fillStyle = 'rgba(74,222,128,0.75)';
+      ctx.beginPath();
+      ctx.moveTo(340, SU.y + SU.h - 14);
+      ctx.lineTo(340 - wX / 2 - 4, SU.y + SU.h + 2);
+      ctx.lineTo(340 + wX / 2 + 4, SU.y + SU.h + 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    /* ---- подписи ---- */
+    txt('НАЦИОНАЛЬНЫЙ ДОХОД   Y = ' + sim.Y.toFixed(1), TOP.x + TOP.w / 2, TOP.y + TOP.h / 2,
+        13, '#ffffff', 'center', '700');
+    txt('Налоги T',   L.cxT + 14, 128, 11, '#f59e0b', 'left', '600');
+    txt('Сбережения S', L.cxS + 14, 128, 11, '#a78bfa', 'left', '600');
+    txt('Потребление C', L.cxC + 16, 128, 11, '#56ccf2', 'left', '600');
+    txt('Импорт M', 660, L.jY - 16, 11, '#ef4444', 'center', '600');
+    txt('ГОСУДАРСТВО', GT.x + GT.w / 2, GT.y + 16, 9.5, '#f8d08a', 'center', '700');
+    txt('СБЕРЕЖЕНИЯ',  ST.x + ST.w / 2, ST.y + 16, 9.5, '#c4b5fd', 'center', '700');
+    txt('G', L.cxT + 12, 430, 12, '#f59e0b', 'left', '700');
+    txt('I', L.cxS + 12, 430, 12, '#a78bfa', 'left', '700');
+    txt('Экспорт X', 360, 610, 11, '#4ade80', 'left', '600');
+    txt('Насос', 34, 340, 10, '#4ade80', 'center', '600');
+    txt('СУММА', SU.x + 14, SU.y + SU.h + 14, 9.5, '#3d6b93', 'left', '700');
+  }
+
+  /* ===================== UI / WEBSOCKET ===================== */
+  const ui = {};
+  ['c', 't', 'm', 'G', 'I', 'r', 'X'].forEach(k => {
+    ui['s_' + k] = document.getElementById('s_' + k);
+    ui['v_' + k] = document.getElementById('v_' + k);
+  });
+  const KEYMAP = { c: 'c', t: 't', m: 'm', G: 'G', I: 'I0', r: 'r', X: 'X' };
+  const FMT = { c: 2, t: 2, m: 2, G: 1, I: 1, r: 1, X: 1 };
+  const $ = id => document.getElementById(id);
+
+  let ws = null;
+  let wsReady = false;
+  let paused = false;
+  let pendingParams = null;
+
+  function sendParams() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'params', data: P }));
+  }
+
+  function scheduleParams() {
+    if (pendingParams) return;
+    pendingParams = setTimeout(() => {
+      pendingParams = null;
+      sendParams();
+    }, 60);
+  }
+
+  Object.keys(KEYMAP).forEach(k => {
+    const el = ui['s_' + k];
+    el.addEventListener('input', () => {
+      const val = parseFloat(el.value);
+      P[KEYMAP[k]] = val;
+      ui['v_' + k].textContent = val.toFixed(FMT[k]);
+      scheduleParams();
+    });
+    ui['v_' + k].textContent = parseFloat(el.value).toFixed(FMT[k]);
+  });
+
+  function setStatus(text, cls) {
+    const s = $('status');
+    s.textContent = text;
+    s.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function updateReadout() {
+    $('r_Y').textContent = sim.Y.toFixed(1);
+    $('r_C').textContent = sim.flows.Cd.toFixed(1);
+    $('r_S').textContent = sim.flows.S.toFixed(1);
+    $('r_T').textContent = sim.flows.T.toFixed(1);
+    $('r_I').textContent = sim.flows.Iout.toFixed(1);
+    $('r_G').textContent = sim.flows.Gout.toFixed(1);
+    $('

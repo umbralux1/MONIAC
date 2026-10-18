@@ -1,0 +1,19 @@
+[project]
+name = "moniac"
+version = "0.1.0"
+description = "Гидравлический компьютер Филлипса на FastAPI"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "pydantic==2.10.4",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true
