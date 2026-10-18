@@ -2,151 +2,311 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MONIAC — гидравлическая модель экономики</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MONIAC</title>
 <style>
-  * { box-sizing: border-box; }
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --text-3: #86868b;
+    --hair: rgba(0,0,0,0.08);
+    --fill: rgba(120,120,128,0.12);
+    --fill-2: rgba(120,120,128,0.20);
+    --accent: #0071e3;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 28px rgba(0,0,0,0.06);
+    --ok: #34c759;
+    --err: #ff3b30;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --text-2: #a1a1a6;
+      --text-3: #8e8e93;
+      --hair: rgba(255,255,255,0.10);
+      --fill: rgba(120,120,128,0.24);
+      --fill-2: rgba(120,120,128,0.36);
+      --accent: #0a84ff;
+      --shadow: none;
+      --ok: #30d158;
+      --err: #ff453a;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   body {
-    margin: 0; min-height: 100vh; background: #060d18; color: #cfe8ff;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                 "Helvetica Neue", "Inter", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
   }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 48px; }
-  h1 { font-size: 19px; font-weight: 600; margin: 0 0 3px; letter-spacing: .3px; }
-  .sub { font-size: 12.5px; color: #5d86ad; margin: 0 0 20px; line-height: 1.5; }
-  .app { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
-  .stage { flex: 1 1 560px; min-width: 300px; }
-  canvas {
-    width: 100%; height: auto; display: block; border-radius: 16px;
-    background: #0b1a2e; border: 1px solid #16304d;
-    box-shadow: 0 20px 60px -30px #000;
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 56px 32px 64px; }
+
+  header { margin-bottom: 40px; }
+  .eyebrow {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    letter-spacing: 0; margin-bottom: 6px;
   }
-  .panel { flex: 0 0 318px; display: flex; flex-direction: column; gap: 13px; }
+  h1 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+    font-size: clamp(32px, 4.4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+  }
+  .sub {
+    margin-top: 12px; max-width: 640px;
+    font-size: 17px; color: var(--text-2); letter-spacing: -0.015em;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 980px) { .app { grid-template-columns: 1fr; } }
+
   .card {
-    background: #0b1a2e; border: 1px solid #16304d; border-radius: 14px; padding: 14px;
+    background: var(--card);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--hair);
   }
-  .card h2 {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1.1px;
-    color: #5d86ad; margin: 0 0 11px; font-weight: 600;
+
+  .stage { padding: 12px; position: sticky; top: 20px; }
+  @media (max-width: 980px) { .stage { position: static; } }
+  canvas { display: block; width: 100%; height: auto; aspect-ratio: 720 / 660; border-radius: 14px; }
+
+  .panel { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ---- Hero Y ---- */
+  .hero { padding: 22px 24px 20px; }
+  .hero-top { display: flex; justify-content: space-between; align-items: center; }
+  .label { font-size: 13px; color: var(--text-3); font-weight: 500; }
+  .hero-val {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    font-size: 56px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.05;
+    margin-top: 4px; font-variant-numeric: tabular-nums;
   }
-  .ctrl { margin-bottom: 11px; }
-  .ctrl:last-child { margin-bottom: 0; }
+  .hero-eq {
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--hair);
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; color: var(--text-2);
+  }
+  .hero-eq b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 500; color: var(--text-3);
+    padding: 4px 10px 4px 8px; border-radius: 999px; background: var(--fill);
+  }
+  .status::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3);
+  }
+  .status.ok { color: var(--ok); }
+  .status.ok::before { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+  .status.err { color: var(--err); }
+  .status.err::before { background: var(--err); }
+
+  /* ---- Section ---- */
+  .section { padding: 20px 24px 8px; }
+  .section h2 {
+    font-size: 20px; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 6px;
+  }
+
+  .ctrl { padding: 14px 0; border-top: 1px solid var(--hair); }
+  .section h2 + .ctrl { border-top: none; padding-top: 8px; }
   .ctrl label {
-    display: flex; justify-content: space-between; font-size: 12px;
-    color: #9dc0dd; margin-bottom: 5px;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px; color: var(--text); margin-bottom: 10px;
   }
-  .ctrl label b { color: #56ccf2; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ctrl label b {
+    font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text);
+    min-width: 44px; text-align: right;
+  }
+  .ctrl label i { font-style: normal; color: var(--text-3); margin-left: 4px; }
+
   input[type=range] {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
-    background: #16304d; border-radius: 3px; outline: none;
+    --p: 50%;
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 28px; background: transparent; cursor: pointer;
   }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--accent) var(--p), var(--fill-2) var(--p));
+  }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--fill-2); }
+  input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
   input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
-    background: #56ccf2; cursor: pointer; border: 2px solid #0b1a2e;
-    box-shadow: 0 0 8px #56ccf288;
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px; margin-top: -10px; border-radius: 50%;
+    background: #fff; border: 0.5px solid rgba(0,0,0,0.04);
+    box-shadow: 0 0.5px 4px rgba(0,0,0,0.12), 0 6px 13px rgba(0,0,0,0.12);
+    transition: transform .15s ease;
   }
   input[type=range]::-moz-range-thumb {
-    width: 13px; height: 13px; border-radius: 50%; background: #56ccf2;
-    cursor: pointer; border: 2px solid #0b1a2e;
+    width: 24px; height: 24px; border-radius: 50%; background: #fff; border: none;
+    box-shadow: 0 0.5px 4px rgba(0,0,0,0.12), 0 6px 13px rgba(0,0,0,0.12);
   }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
-  .ro { display: flex; flex-direction: column; gap: 1px; }
-  .ro span { font-size: 10.5px; color: #5d86ad; }
-  .ro b {
-    font-size: 14px; font-variant-numeric: tabular-nums;
-    color: #cfe8ff; font-weight: 600;
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.08); }
+  input[type=range]:focus-visible { outline: none; }
+  input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+  /* ---- Readouts ---- */
+  .grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 4px 0 12px;
   }
-  .eq {
-    font-size: 13px; text-align: center; color: #56ccf2; letter-spacing: .4px;
-    padding: 9px; background: #08182b; border-radius: 9px; margin-top: 2px;
-  }
-  .eq small { display: block; color: #4d7599; font-size: 10.5px; margin-top: 4px; letter-spacing: 0; }
-  .btns { display: flex; gap: 8px; }
+  .ro { padding: 12px 0; border-top: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; }
+  .ro:nth-child(-n+2) { border-top: none; }
+  .ro .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .ro span { font-size: 13px; color: var(--text-2); display: block; }
+  .ro b { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+  /* ---- Buttons ---- */
+  .btns { display: flex; gap: 12px; }
   button {
-    flex: 1; padding: 9px; border-radius: 9px; border: 1px solid #1d3d60;
-    background: #102439; color: #9dc0dd; font-size: 12px; cursor: pointer;
-    font-family: inherit; transition: .15s;
+    flex: 1; height: 44px; border-radius: 999px; border: none;
+    font-family: inherit; font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
+    cursor: pointer; transition: background .2s ease, transform .1s ease, opacity .2s;
   }
-  button:hover { background: #16304d; color: #cfe8ff; }
-  .status {
-    font-size: 11px; color: #4d7599; text-align: center; padding: 4px;
+  button:active { transform: scale(0.98); }
+  button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
+  .primary { background: var(--accent); color: #fff; }
+  .primary:hover { opacity: 0.88; }
+  .secondary { background: var(--fill); color: var(--accent); }
+  .secondary:hover { background: var(--fill-2); }
+
+  footer { margin-top: 28px; font-size: 12px; color: var(--text-3); text-align: center; }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 32px 16px 40px; }
+    .hero-val { font-size: 44px; }
   }
-  .status.ok { color: #4ade80; }
-  .status.err { color: #ef4444; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>MONIAC — гидравлический компьютер Филлипса</h1>
-  <p class="sub">Деньги ведут себя как вода: уровень в резервуаре = запас, поток = расход.
-  Сервер на FastAPI считает дифференциальные уравнения, клиент рисует анимацию.</p>
+  <header>
+    <div class="eyebrow">Гидравлическая модель экономики</div>
+    <h1>MONIAC</h1>
+    <p class="sub">Компьютер Филлипса, где деньги текут как вода. Уровень в резервуаре — запас, поток — расход.</p>
+  </header>
 
   <div class="app">
-    <div class="stage"><canvas id="c"></canvas></div>
+    <div class="card stage"><canvas id="c"></canvas></div>
 
     <aside class="panel">
-      <div class="card">
-        <h2>Параметры экономики</h2>
+      <div class="card hero">
+        <div class="hero-top">
+          <span class="label">Национальный доход</span>
+          <span class="status" id="status">соединение…</span>
+        </div>
+        <div class="hero-val" id="r_Y">—</div>
+        <div class="hero-eq">
+          <span>Равновесие Y* = k·(G + I + X) <b id="r_ys">—</b></span>
+          <span>k <b id="r_k">—</b></span>
+        </div>
+      </div>
 
+      <div class="card section">
+        <h2>Параметры</h2>
         <div class="ctrl">
-          <label>Склонность к потреблению (c) <b id="v_c">0.80</b></label>
+          <label><span>Склонность к потреблению<i>c</i></span><b id="v_c">0.80</b></label>
           <input type="range" id="s_c" min="0.50" max="0.95" step="0.01" value="0.80">
         </div>
         <div class="ctrl">
-          <label>Ставка налога (t) <b id="v_t">0.20</b></label>
+          <label><span>Ставка налога<i>t</i></span><b id="v_t">0.20</b></label>
           <input type="range" id="s_t" min="0" max="0.50" step="0.01" value="0.20">
         </div>
         <div class="ctrl">
-          <label>Склонность к импорту (m) <b id="v_m">0.15</b></label>
+          <label><span>Склонность к импорту<i>m</i></span><b id="v_m">0.15</b></label>
           <input type="range" id="s_m" min="0" max="0.50" step="0.01" value="0.15">
         </div>
         <div class="ctrl">
-          <label>Госрасходы (G) <b id="v_G">15.0</b></label>
+          <label><span>Госрасходы<i>G</i></span><b id="v_G">15.0</b></label>
           <input type="range" id="s_G" min="0" max="45" step="0.5" value="15">
         </div>
         <div class="ctrl">
-          <label>Автономные инвестиции (I₀) <b id="v_I">20.0</b></label>
+          <label><span>Автономные инвестиции<i>I₀</i></span><b id="v_I">20.0</b></label>
           <input type="range" id="s_I" min="0" max="45" step="0.5" value="20">
         </div>
         <div class="ctrl">
-          <label>Процентная ставка (r) <b id="v_r">5.0</b></label>
+          <label><span>Процентная ставка<i>r, %</i></span><b id="v_r">5.0</b></label>
           <input type="range" id="s_r" min="0" max="14" step="0.1" value="5">
         </div>
         <div class="ctrl">
-          <label>Экспорт (X) <b id="v_X">10.0</b></label>
+          <label><span>Экспорт<i>X</i></span><b id="v_X">10.0</b></label>
           <input type="range" id="s_X" min="0" max="45" step="0.5" value="10">
         </div>
       </div>
 
-      <div class="card">
-        <h2>Показатели</h2>
+      <div class="card section">
+        <h2>Потоки</h2>
         <div class="grid">
-          <div class="ro"><span>Доход Y</span><b id="r_Y">—</b></div>
-          <div class="ro"><span>Потребление C</span><b id="r_C">—</b></div>
-          <div class="ro"><span>Сбережения S</span><b id="r_S">—</b></div>
-          <div class="ro"><span>Налоги T</span><b id="r_T">—</b></div>
-          <div class="ro"><span>Инвестиции I</span><b id="r_I">—</b></div>
-          <div class="ro"><span>Госрасходы G</span><b id="r_G">—</b></div>
-          <div class="ro"><span>Импорт M</span><b id="r_M">—</b></div>
-          <div class="ro"><span>Экспорт X</span><b id="r_X">—</b></div>
-        </div>
-        <div class="eq" style="margin-top:11px">
-          Y = C + I + G + (X − M)
-          <small>Мультипликатор = <span id="r_k">—</span></small>
+          <div class="ro"><i class="dot" data-c="blue"></i><div><span>Потребление</span><b id="r_C">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="purple"></i><div><span>Сбережения</span><b id="r_S">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Налоги</span><b id="r_T">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Госрасходы</span><b id="r_G">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="purple"></i><div><span>Инвестиции</span><b id="r_I">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="red"></i><div><span>Импорт</span><b id="r_M">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="green"></i><div><span>Экспорт</span><b id="r_X">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="orange"></i><div><span>Сальдо бюджета T − G</span><b id="r_B">—</b></div></div>
         </div>
       </div>
 
       <div class="btns">
-        <button id="btnPause">Пауза</button>
-        <button id="btnReset">Сброс</button>
+        <button class="primary" id="btnPause">Пауза</button>
+        <button class="secondary" id="btnReset">Сброс</button>
       </div>
-      <div class="status" id="status">соединение…</div>
     </aside>
   </div>
+
+  <footer>Модель считается на сервере FastAPI и транслируется по WebSocket.</footer>
 </div>
 
 <script>
 (function () {
   'use strict';
+
+  /* ===================== ТЕМА ===================== */
+  const THEMES = {
+    light: {
+      bg: '#ffffff', pipe: '#f2f2f5', glass: '#d2d2d7', tick: '#e5e5ea',
+      text: '#1d1d1f', text2: '#86868b', inner: '#ffffff',
+      blue: '#0071e3', orange: '#ff9500', purple: '#af52de', red: '#ff3b30', green: '#34c759'
+    },
+    dark: {
+      bg: '#1c1c1e', pipe: '#2c2c2e', glass: '#48484a', tick: '#3a3a3c',
+      text: '#f5f5f7', text2: '#8e8e93', inner: '#1c1c1e',
+      blue: '#0a84ff', orange: '#ff9f0a', purple: '#bf5af2', red: '#ff453a', green: '#30d158'
+    }
+  };
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  let K = mq.matches ? THEMES.dark : THEMES.light;
+  function applyDots() {
+    document.querySelectorAll('.dot').forEach(d => { d.style.background = K[d.dataset.c]; });
+  }
+  (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(e => {
+    K = e.matches ? THEMES.dark : THEMES.light; applyDots();
+  });
+  applyDots();
+
+  function rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
 
   /* ===================== КАНВАС ===================== */
   const canvas = document.getElementById('c');
@@ -157,29 +317,26 @@
   canvas.height = H * DPR;
   ctx.scale(DPR, DPR);
 
-  /* ===================== СОСТОЯНИЕ КЛИЕНТА ===================== */
-  // Параметры — зеркало серверных (для слайдеров)
+  const FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif';
+
+  /* ===================== СОСТОЯНИЕ ===================== */
   const P = { c: 0.80, t: 0.20, m: 0.15, G: 15, I0: 20, r: 5, X: 10 };
-
-  // Последний снимок с сервера
   let sim = {
-    hGov: 22, hSav: 22, hSump: 20, Y: 60, tSec: 0,
+    hGov: 0, hSav: 0, hSump: 20, Y: 60, tSec: 0,
     flows: { T:0, S:0, C:0, Cd:0, M:0, Gout:0, Iout:0, X:0 },
-    multiplier: 0
+    multiplier: 0, yStar: 0
   };
-
-  const TANK_H = 150, SUMP_H = 62;
 
   /* ===================== ГЕОМЕТРИЯ ===================== */
   const L = {
-    top:  { x: 70,  y: 45,  w: 590, h: 44 },
-    sump: { x: 80,  y: 505, w: 520, h: 62 },
-    govT: { x: 180, y: 205, w: 105, h: 150 },
-    savT: { x: 340, y: 205, w: 105, h: 150 },
-    cxT: 232.5, cxS: 392.5, cxC: 560,
-    jY: 250
+    top:  { x: 80,  y: 60,  w: 580, h: 52 },
+    sump: { x: 90,  y: 505, w: 510, h: 70 },
+    govT: { x: 190, y: 215, w: 100, h: 150 },
+    savT: { x: 400, y: 215, w: 100, h: 150 },
+    cxT: 240, cxS: 450, cxC: 590,
+    jY: 262
   };
-  const wf = v => Math.max(0, Math.min(72, v * 0.8));
+  const wf = v => Math.max(0, Math.min(36, v * 0.42));
 
   /* ===================== ПРИМИТИВЫ ===================== */
   function rr(x, y, w, h, r) {
@@ -192,176 +349,180 @@
     ctx.closePath();
   }
   function txt(s, x, y, size, color, align, weight) {
-    ctx.font = (weight || '400') + ' ' + (size || 11) + 'px system-ui, sans-serif';
-    ctx.fillStyle = color || '#8fb8dc';
+    ctx.font = (weight || 500) + ' ' + (size || 12) + 'px ' + FONT;
+    ctx.fillStyle = color || K.text2;
     ctx.textAlign = align || 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(s, x, y);
   }
-  function drawStream(cx, y1, y2, w, phase, color) {
-    if (w < 1.2 || y2 <= y1 + 1) return;
+  function drawStream(cx, y1, y2, w, phase, hex, alpha) {
+    if (w < 1 || y2 <= y1 + 1) return;
     const x = cx - w / 2;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y1, w, y2 - y1);
-    const period = 46, speed = 130;
-    const off = (sim.tSec * speed + phase * 7) % period;
-    ctx.fillStyle = 'rgba(220,245,255,0.30)';
-    for (let yy = y1 - period + off; yy < y2; yy += period) {
-      const a = Math.max(y1, yy), b = Math.min(y2, yy + 11);
-      if (b > a) ctx.fillRect(x + 1.5, a, Math.max(0, w - 3), b - a);
-    }
-  }
-  function drawTankWater(t, level, rgb) {
-    if (level <= 0.6) return;
-    const top = t.y + t.h - level;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(t.x + 1.5, t.y + t.h - 1.5);
-    ctx.lineTo(t.x + 1.5, top);
-    for (let px = 0; px <= t.w - 3; px += 3) {
-      ctx.lineTo(t.x + 1.5 + px, top + Math.sin(px * 0.09 + sim.tSec * 2.6) * 2.2);
-    }
-    ctx.lineTo(t.x + t.w - 1.5, t.y + t.h - 1.5);
-    ctx.closePath();
-    const g = ctx.createLinearGradient(0, top, 0, t.y + t.h);
-    g.addColorStop(0, 'rgba(' + rgb + ',0.85)');
-    g.addColorStop(1, 'rgba(' + rgb + ',0.55)');
-    ctx.fillStyle = g;
+    rr(x, y1, w, y2 - y1, Math.min(w / 2, 6));
+    ctx.fillStyle = rgba(hex, alpha == null ? 0.85 : alpha);
     ctx.fill();
+    // мягкий бегущий блик
+    const period = 54, speed = 110;
+    const off = (sim.tSec * speed + phase * 7) % period;
+    ctx.save();
+    rr(x, y1, w, y2 - y1, Math.min(w / 2, 6)); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    for (let yy = y1 - period + off; yy < y2; yy += period) {
+      ctx.fillRect(x, yy, w, 14);
+    }
     ctx.restore();
+  }
+  // Бак хранит накопленное сальдо: ноль посередине, плюс — вверх, минус — вниз.
+  const STOCK_SCALE = 300;
+  function fmtStock(v) {
+    return Math.round(Math.abs(v)).toLocaleString('ru-RU');
+  }
+  function drawTank(t, level, hex, title, posLabel, negLabel) {
+    const midY = t.y + t.h / 2;
+    const frac = Math.tanh(level / STOCK_SCALE);         // −1…1, мягкое насыщение
+    const hFill = Math.abs(frac) * (t.h / 2);
+    const neg = level < 0;
+    const col = neg ? K.red : hex;
+
+    rr(t.x, t.y, t.w, t.h, 14);
+    ctx.fillStyle = K.pipe; ctx.fill();
+
+    if (hFill > 0.5) {
+      ctx.save();
+      rr(t.x, t.y, t.w, t.h, 14); ctx.clip();
+      const edge = neg ? midY + hFill : midY - hFill;
+      ctx.beginPath();
+      ctx.moveTo(t.x, midY);
+      ctx.lineTo(t.x, edge);
+      for (let px = 0; px <= t.w; px += 3) {
+        ctx.lineTo(t.x + px, edge + Math.sin(px * 0.08 + sim.tSec * 2.2) * Math.min(1.6, hFill / 4));
+      }
+      ctx.lineTo(t.x + t.w, midY);
+      ctx.closePath();
+      const g = ctx.createLinearGradient(0, midY, 0, edge);
+      g.addColorStop(0, rgba(col, 0.70));
+      g.addColorStop(1, rgba(col, 0.95));
+      ctx.fillStyle = g; ctx.fill();
+      ctx.restore();
+    }
+
+    // нулевая линия
+    ctx.strokeStyle = K.glass; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(t.x + 6, Math.round(midY) + 0.5); ctx.lineTo(t.x + t.w - 6, Math.round(midY) + 0.5); ctx.stroke();
+    ctx.setLineDash([]);
+    txt('0', t.x + t.w + 8, midY, 10, K.text2, 'left', 500);
+
+    txt(title, t.x - 12, t.y + 14, 12, K.text, 'right', 600);
+    txt((neg ? negLabel : posLabel) + ' ' + fmtStock(level), t.x - 12, t.y + 32, 11, neg ? K.red : K.text2, 'right', 500);
   }
 
   /* ===================== РЕНДЕР ===================== */
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#0b1a2e';
+    ctx.fillStyle = K.bg;
     ctx.fillRect(0, 0, W, H);
 
     const TOP = L.top, SU = L.sump, GT = L.govT, ST = L.savT;
     const F = sim.flows;
     const tSec = sim.tSec;
 
-    /* ---- насосная магистраль ---- */
+    /* ---- магистраль насоса ---- */
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath();
-    ctx.moveTo(84, 540); ctx.lineTo(34, 540);
-    ctx.lineTo(34, 68);  ctx.lineTo(76, 68);
-    ctx.strokeStyle = '#12283f'; ctx.lineWidth = 30; ctx.stroke();
-    ctx.strokeStyle = 'rgba(86,204,242,0.45)'; ctx.lineWidth = 12;
-    ctx.setLineDash([9, 15]);
-    ctx.lineDashOffset = -((tSec * 95) % 24);
+    ctx.moveTo(SU.x + 4, SU.y + SU.h / 2); ctx.lineTo(40, SU.y + SU.h / 2);
+    ctx.lineTo(40, TOP.y + TOP.h / 2);  ctx.lineTo(TOP.x + 4, TOP.y + TOP.h / 2);
+    ctx.strokeStyle = K.pipe; ctx.lineWidth = 22; ctx.stroke();
+    ctx.strokeStyle = rgba(K.blue, 0.55); ctx.lineWidth = 4;
+    ctx.setLineDash([2, 14]);
+    ctx.lineDashOffset = -((tSec * 60) % 16);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    /* ---- крыльчатка насоса ---- */
+    /* ---- насос ---- */
+    const pY = 300;
+    ctx.beginPath(); ctx.arc(40, pY, 20, 0, Math.PI * 2);
+    ctx.fillStyle = K.inner; ctx.fill();
+    ctx.strokeStyle = K.glass; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.save();
-    ctx.translate(34, 300);
-    ctx.rotate(tSec * 2.6);
-    ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
-    for (let i = 0; i < 4; i++) {
-      ctx.rotate(Math.PI / 2);
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -10); ctx.stroke();
+    ctx.translate(40, pY);
+    ctx.rotate(tSec * 2.2);
+    ctx.strokeStyle = K.blue; ctx.lineWidth = 2.5;
+    for (let i = 0; i < 3; i++) {
+      ctx.rotate(Math.PI * 2 / 3);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -11); ctx.stroke();
     }
     ctx.restore();
-    ctx.beginPath(); ctx.arc(34, 300, 14, 0, Math.PI * 2);
-    ctx.strokeStyle = '#2a5a3a'; ctx.lineWidth = 2; ctx.stroke();
+    txt('Насос', 70, pY, 11, K.text2, 'left', 500);
 
-    /* ---- верхний резервуар ---- */
-    const tg = ctx.createLinearGradient(0, TOP.y, 0, TOP.y + TOP.h);
-    tg.addColorStop(0, 'rgba(86,204,242,0.55)');
-    tg.addColorStop(1, 'rgba(30,110,180,0.80)');
-    rr(TOP.x + 2, TOP.y + 2, TOP.w - 4, TOP.h - 4, 8);
+    /* ---- падающие потоки (рисуем до резервуаров) ---- */
+    const yTop = TOP.y + TOP.h;
+    drawStream(L.cxT, yTop, GT.y, wf(F.T), 0,  K.orange);
+    drawStream(L.cxS, yTop, ST.y, wf(F.S), 11, K.purple);
+    drawStream(L.cxC, yTop, L.jY, wf(F.C), 23, K.blue);
+    drawStream(L.cxC, L.jY, SU.y, wf(F.Cd), 23, K.blue);
+    drawStream(L.cxT, GT.y + GT.h, SU.y, wf(F.Gout), 5,  K.orange, 0.6);
+    drawStream(L.cxS, ST.y + ST.h, SU.y, wf(F.Iout), 17, K.purple, 0.6);
+
+    /* ---- импорт ---- */
+    const wM = wf(F.M);
+    if (wM > 1) {
+      const x0 = L.cxC, x1 = 690;
+      rr(x0, L.jY - wM / 2, x1 - x0 - 10, wM, Math.min(wM / 2, 6));
+      ctx.fillStyle = rgba(K.red, 0.8); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x1 + 6, L.jY);
+      ctx.lineTo(x1 - 10, L.jY - wM / 2 - 5);
+      ctx.lineTo(x1 - 10, L.jY + wM / 2 + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    /* ---- экспорт ---- */
+    const wX = wf(F.X);
+    drawStream(345, SU.y + SU.h, 648, wX, 3, K.green, 0.8);
+
+    /* ---- верхний резервуар (доход) ---- */
+    rr(TOP.x, TOP.y, TOP.w, TOP.h, 16);
+    const tg = ctx.createLinearGradient(TOP.x, 0, TOP.x + TOP.w, 0);
+    tg.addColorStop(0, rgba(K.blue, 0.92));
+    tg.addColorStop(1, rgba(K.blue, 0.78));
     ctx.fillStyle = tg; ctx.fill();
-    rr(TOP.x, TOP.y, TOP.w, TOP.h, 10);
-    ctx.strokeStyle = '#1d3d60'; ctx.lineWidth = 2; ctx.stroke();
+    txt('Доход', TOP.x + 22, TOP.y + TOP.h / 2, 13, 'rgba(255,255,255,0.8)', 'left', 500);
+    txt('Y = ' + sim.Y.toFixed(1), TOP.x + TOP.w - 22, TOP.y + TOP.h / 2, 17, '#ffffff', 'right', 600);
 
-    /* ---- сосуды ---- */
-    [GT, ST].forEach(t => {
-      rr(t.x, t.y, t.w, t.h, 8);
-      ctx.strokeStyle = '#1d3d60'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.strokeStyle = 'rgba(29,61,96,0.65)'; ctx.lineWidth = 1;
-      for (let i = 1; i < 4; i++) {
-        const yy = t.y + t.h * i / 4;
-        ctx.beginPath(); ctx.moveTo(t.x, yy); ctx.lineTo(t.x + 9, yy); ctx.stroke();
-      }
-    });
+    /* ---- резервуары ---- */
+    drawTank(GT, sim.hGov, K.orange, 'Государство', 'Профицит', 'Долг');
+    drawTank(ST, sim.hSav, K.purple, 'Сбережения', 'Богатство', 'Займы');
 
-    /* ---- вода в резервуарах ---- */
-    drawTankWater(GT, sim.hGov, '245,158,11');
-    drawTankWater(ST, sim.hSav, '167,139,250');
-
-    /* ---- вода в нижнем резервуаре ---- */
-    rr(SU.x, SU.y, SU.w, SU.h, 10);
-    ctx.save(); ctx.clip();
-    const sw = (sim.hSump / SUMP_H) * (SU.h - 4);
-    const sy = SU.y + SU.h - 2 - sw;
-    const sg = ctx.createLinearGradient(0, sy, 0, SU.y + SU.h);
-    sg.addColorStop(0, 'rgba(86,204,242,0.90)');
-    sg.addColorStop(1, 'rgba(30,110,180,0.70)');
+    /* ---- нижний резервуар ---- */
+    rr(SU.x, SU.y, SU.w, SU.h, 16);
+    ctx.fillStyle = K.pipe; ctx.fill();
+    ctx.save();
+    rr(SU.x, SU.y, SU.w, SU.h, 16); ctx.clip();
+    const sw = (1 - Math.exp(-Math.max(0, sim.hSump) / 45)) * SU.h;
+    const sy = SU.y + SU.h - sw;
     ctx.beginPath();
     ctx.moveTo(SU.x, SU.y + SU.h);
     ctx.lineTo(SU.x, sy);
     for (let px = 0; px <= SU.w; px += 4) {
-      ctx.lineTo(SU.x + px, sy + Math.sin(px * 0.05 + tSec * 2.2) * 2.5);
+      ctx.lineTo(SU.x + px, sy + Math.sin(px * 0.045 + tSec * 2) * 2);
     }
     ctx.lineTo(SU.x + SU.w, SU.y + SU.h);
     ctx.closePath();
-    ctx.fillStyle = sg; ctx.fill();
+    ctx.fillStyle = rgba(K.blue, 0.85); ctx.fill();
     ctx.restore();
-    rr(SU.x, SU.y, SU.w, SU.h, 10);
-    ctx.strokeStyle = '#1d3d60'; ctx.lineWidth = 2; ctx.stroke();
-
-    /* ---- падающие потоки ---- */
-    const yTop = TOP.y + TOP.h;
-    drawStream(L.cxT, yTop, GT.y, wf(F.T), 0,  'rgba(245,158,11,0.75)');
-    drawStream(L.cxS, yTop, ST.y, wf(F.S), 11, 'rgba(167,139,250,0.75)');
-    drawStream(L.cxC, yTop, L.jY, wf(F.C), 23, 'rgba(86,204,242,0.78)');
-    drawStream(L.cxC, L.jY, SU.y, wf(F.Cd), 23, 'rgba(86,204,242,0.78)');
-
-    /* ---- сливы из резервуаров ---- */
-    drawStream(L.cxT, GT.y + GT.h, SU.y, wf(F.Gout), 5,  'rgba(245,158,11,0.50)');
-    drawStream(L.cxS, ST.y + ST.h, SU.y, wf(F.Iout), 17, 'rgba(167,139,250,0.50)');
-
-    /* ---- импорт (ветка вправо) ---- */
-    const wM = wf(F.M);
-    if (wM > 1.2) {
-      ctx.fillStyle = 'rgba(239,68,68,0.65)';
-      ctx.fillRect(L.cxC, L.jY - wM / 2, 700 - L.cxC - 14, wM);
-      ctx.beginPath();
-      ctx.moveTo(712, L.jY);
-      ctx.lineTo(694, L.jY - wM / 2 - 5);
-      ctx.lineTo(694, L.jY + wM / 2 + 5);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    /* ---- экспорт (инъекция снизу) ---- */
-    const wX = wf(F.X);
-    drawStream(340, 648, SU.y + SU.h, wX, 3, 'rgba(74,222,128,0.65)');
-    if (wX > 1.2) {
-      ctx.fillStyle = 'rgba(74,222,128,0.75)';
-      ctx.beginPath();
-      ctx.moveTo(340, SU.y + SU.h - 14);
-      ctx.lineTo(340 - wX / 2 - 4, SU.y + SU.h + 2);
-      ctx.lineTo(340 + wX / 2 + 4, SU.y + SU.h + 2);
-      ctx.closePath();
-      ctx.fill();
-    }
 
     /* ---- подписи ---- */
-    txt('НАЦИОНАЛЬНЫЙ ДОХОД   Y = ' + sim.Y.toFixed(1), TOP.x + TOP.w / 2, TOP.y + TOP.h / 2,
-        13, '#ffffff', 'center', '700');
-    txt('Налоги T',   L.cxT + 14, 128, 11, '#f59e0b', 'left', '600');
-    txt('Сбережения S', L.cxS + 14, 128, 11, '#a78bfa', 'left', '600');
-    txt('Потребление C', L.cxC + 16, 128, 11, '#56ccf2', 'left', '600');
-    txt('Импорт M', 660, L.jY - 16, 11, '#ef4444', 'center', '600');
-    txt('ГОСУДАРСТВО', GT.x + GT.w / 2, GT.y + 16, 9.5, '#f8d08a', 'center', '700');
-    txt('СБЕРЕЖЕНИЯ',  ST.x + ST.w / 2, ST.y + 16, 9.5, '#c4b5fd', 'center', '700');
-    txt('G', L.cxT + 12, 430, 12, '#f59e0b', 'left', '700');
-    txt('I', L.cxS + 12, 430, 12, '#a78bfa', 'left', '700');
-    txt('Экспорт X', 360, 610, 11, '#4ade80', 'left', '600');
-    txt('Насос', 34, 340, 10, '#4ade80', 'center', '600');
-    txt('СУММА', SU.x + 14, SU.y + SU.h + 14, 9.5, '#3d6b93', 'left', '700');
+    const labY = yTop + 34;
+    txt('Налоги', L.cxT + 26, labY, 12, K.orange, 'left', 600);
+    txt('Сбережения', L.cxS + 26, labY, 12, K.purple, 'left', 600);
+    txt('Потребление', L.cxC + 26, labY, 12, K.blue, 'left', 600);
+    txt('Импорт', 640, L.jY - 26, 12, K.red, 'center', 600);
+    txt('G', L.cxT + 22, 440, 13, K.orange, 'left', 600);
+    txt('I', L.cxS + 22, 440, 13, K.purple, 'left', 600);
+    txt('Экспорт', 345 + 36, 620, 12, K.green, 'left', 600);
+    txt('Совокупный спрос', SU.x + 18, SU.y + 16, 11, K.text2, 'left', 500);
   }
 
   /* ===================== UI / WEBSOCKET ===================== */
@@ -383,13 +544,13 @@
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type: 'params', data: P }));
   }
-
   function scheduleParams() {
     if (pendingParams) return;
-    pendingParams = setTimeout(() => {
-      pendingParams = null;
-      sendParams();
-    }, 60);
+    pendingParams = setTimeout(() => { pendingParams = null; sendParams(); }, 60);
+  }
+  function paintTrack(el) {
+    const p = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--p', p + '%');
   }
 
   Object.keys(KEYMAP).forEach(k => {
@@ -398,9 +559,11 @@
       const val = parseFloat(el.value);
       P[KEYMAP[k]] = val;
       ui['v_' + k].textContent = val.toFixed(FMT[k]);
+      paintTrack(el);
       scheduleParams();
     });
     ui['v_' + k].textContent = parseFloat(el.value).toFixed(FMT[k]);
+    paintTrack(el);
   });
 
   function setStatus(text, cls) {
@@ -419,32 +582,32 @@
     $('r_M').textContent = sim.flows.M.toFixed(1);
     $('r_X').textContent = sim.flows.X.toFixed(1);
     $('r_k').textContent = sim.multiplier ? sim.multiplier.toFixed(2) : '—';
+    $('r_ys').textContent = sim.yStar ? sim.yStar.toFixed(1) : '—';
+    const B = sim.flows.T - sim.flows.Gout;
+    $('r_B').textContent = (B > 0 ? '+' : '') + B.toFixed(1);
+    $('r_B').style.color = B < -0.05 ? K.red : '';
   }
 
   let retryDelay = 500;
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(proto + '//' + location.host + '/ws');
-
     ws.onopen = () => {
       wsReady = true;
       retryDelay = 500;
-      setStatus('подключено', 'ok');
+      setStatus(paused ? 'Пауза' : 'В сети', paused ? '' : 'ok');
       sendParams();
       if (paused) ws.send(JSON.stringify({ type: 'pause', value: true }));
     };
     ws.onmessage = ev => {
       let msg;
       try { msg = JSON.parse(ev.data); } catch (e) { return; }
-      if (msg.type === 'state') {
-        sim = msg;
-        updateReadout();
-      }
+      if (msg.type === 'state') { sim = msg; updateReadout(); }
     };
-    ws.onerror = () => setStatus('ошибка соединения', 'err');
+    ws.onerror = () => setStatus('Ошибка', 'err');
     ws.onclose = () => {
       wsReady = false;
-      setStatus('нет связи — переподключение…', 'err');
+      setStatus('Нет связи', 'err');
       setTimeout(connect, retryDelay);
       retryDelay = Math.min(retryDelay * 2, 5000);
     };
@@ -456,20 +619,13 @@
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'pause', value: paused }));
     }
-    setStatus(paused ? 'пауза' : (wsReady ? 'подключено' : 'соединение…'), paused ? '' : (wsReady ? 'ok' : ''));
+    if (wsReady) setStatus(paused ? 'Пауза' : 'В сети', paused ? '' : 'ok');
   });
-
   $('btnReset').addEventListener('click', () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'reset' }));
-    }
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'reset' }));
   });
 
-  function loop() {
-    draw();
-    requestAnimationFrame(loop);
-  }
-
+  function loop() { draw(); requestAnimationFrame(loop); }
   connect();
   loop();
 })();

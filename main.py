@@ -23,10 +23,7 @@ from pydantic import BaseModel, Field
 #  МОДЕЛЬ
 # ────────────────────────────────────────────────────────────────────
 
-TANK_H = 150.0      # ёмкость резервуара
-SUMP_H = 62.0       # ёмкость нижнего резервуара
-K_TANK = 0.25       # коэффициент слива Сатро-Вейра (линейный)
-K_SUMP = 3.0        # коэффициент насоса
+K_SUMP = 3.0        # коэффициент насоса: Y = K_SUMP * h_sump
 
 
 class Params(BaseModel):
@@ -41,12 +38,19 @@ class Params(BaseModel):
 
 @dataclass
 class State:
-    """Внутреннее состояние гидравлической машины."""
-    h_gov: float = 22.0     # уровень в резервуаре правительства
-    h_sav: float = 22.0     # уровень в резервуаре сбережений
-    h_sump: float = 20.0    # уровень в нижнем резервуаре
-    Y: float = 60.0         # национальный доход (поток насоса)
-    t_sec: float = 0.0      # модельное время
+    """
+    Внутреннее состояние гидравлической машины.
+
+    h_gov  — накопленное сальдо бюджета: > 0 профицит, < 0 госдолг.
+    h_sav  — накопленное сальдо частного сектора (S − I): > 0 чистое
+             богатство, < 0 чистые заимствования.
+    h_sump — уровень в нижнем резервуаре; насос качает Y = K_SUMP * h_sump.
+    """
+    h_gov: float = 0.0
+    h_sav: float = 0.0
+    h_sump: float = 20.0
+    Y: float = 60.0
+    t_sec: float = 0.0
     # мгновенные потоки (для отрисовки)
     T: float = 0.0
     S: float = 0.0
@@ -62,56 +66,60 @@ def investment(p: Params) -> float:
     return max(0.0, p.I0 * (1.0 - p.r / 15.0))
 
 
+def multiplier(p: Params) -> float:
+    leak = p.c * (1.0 - p.t) * (1.0 - p.m)
+    return 1.0 / (1.0 - leak) if leak < 1.0 else 0.0
+
+
+def equilibrium_income(p: Params) -> float:
+    """Кейнсианское равновесие Y* = k · (G + I + X)."""
+    return multiplier(p) * (p.G + investment(p) + p.X)
+
+
 def step(s: State, p: Params, dt: float) -> None:
-    """Один шаг интегрирования (Эйлер, малый dt)."""
+    """
+    Один шаг интегрирования (Эйлер, малый dt).
+
+    Утечки (T, S, M) уходят из оборота, инъекции (G, I, X) — экзогенные
+    потоки, заданные политикой и не ограниченные уровнем в баках.
+    Баки лишь копят разницу: государство может работать в дефицит
+    (бак уходит в минус = госдолг).
+    """
     I = investment(p)
     G, X = p.G, p.X
 
     # распределение дохода
     T = p.t * s.Y
-    Yd = max(0.0, s.Y - T)
+    Yd = s.Y - T
     C = p.c * Yd
-    M = C * p.m
+    M = p.m * C
     Cd = C - M
     S = Yd - C
 
-    # сливы из резервуаров
-    G_out = min(G, K_TANK * s.h_gov)
-    I_out = min(I, K_TANK * s.h_sav)
+    # накопленные сальдо
+    s.h_gov += (T - G) * dt
+    s.h_sav += (S - I) * dt
 
-    s.h_gov += (T - G_out) * dt
-    s.h_sav += (S - I_out) * dt
-
-    over = 0.0
-    if s.h_gov > TANK_H:
-        over += (s.h_gov - TANK_H) / dt
-        s.h_gov = TANK_H
-    if s.h_sav > TANK_H:
-        over += (s.h_sav - TANK_H) / dt
-        s.h_sav = TANK_H
-    s.h_gov = max(0.0, s.h_gov)
-    s.h_sav = max(0.0, s.h_sav)
-
-    # нижний резервуар и насос
+    # нижний резервуар и насос: совокупный спрос на отечественное
     pump = K_SUMP * s.h_sump
-    s.h_sump += (Cd + G_out + I_out + X + over - pump) * dt
-    s.h_sump = max(0.0, min(SUMP_H, s.h_sump))
-    s.Y = pump
+    s.h_sump += (Cd + G + I + X - pump) * dt
+    s.h_sump = max(0.0, s.h_sump)
+    s.Y = K_SUMP * s.h_sump
 
     s.T, s.S, s.C, s.Cd, s.M = T, S, C, Cd, M
-    s.G_out, s.I_out, s.X = G_out, I_out, X
+    s.G_out, s.I_out, s.X = G, I, X
     s.t_sec += dt
 
 
 def snapshot(s: State, p: Params) -> dict:
-    mult = 1.0 / (1.0 - p.c * (1.0 - p.t) * (1.0 - p.m)) if p.c * (1.0 - p.t) * (1.0 - p.m) < 1 else 0.0
     return {
         "hGov": s.h_gov, "hSav": s.h_sav, "hSump": s.h_sump,
         "Y": s.Y, "tSec": s.t_sec,
         "flows": {"T": s.T, "S": s.S, "C": s.C, "Cd": s.Cd,
                   "M": s.M, "Gout": s.G_out, "Iout": s.I_out, "X": s.X},
         "params": p.model_dump(),
-        "multiplier": mult,
+        "multiplier": multiplier(p),
+        "yStar": equilibrium_income(p),
     }
 
 
