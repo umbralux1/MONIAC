@@ -25,6 +25,13 @@ from pydantic import BaseModel, Field
 
 K_SUMP = 3.0        # коэффициент насоса: Y = K_SUMP * h_sump
 
+# Денежный рынок (бак «денежных остатков» Филлипса)
+KAPPA = 0.5         # спрос на деньги для сделок: L₁ = KAPPA · Y
+R_MAX = 12.0        # ставка при пустом баке денежных остатков, %
+BETA = 0.4          # насколько падает ставка на единицу свободных денег
+LAMBDA = 0.5        # скорость перетока между активными и свободными деньгами
+R_INV = 15.0        # ставка, при которой инвестиции обнуляются
+
 
 class Params(BaseModel):
     c: float = Field(0.80, ge=0.0, le=1.0, description="склонность к потреблению")
@@ -32,7 +39,9 @@ class Params(BaseModel):
     m: float = Field(0.15, ge=0.0, le=1.0, description="склонность к импорту")
     G: float = Field(15.0, ge=0.0, le=100.0, description="госрасходы")
     I0: float = Field(20.0, ge=0.0, le=100.0, description="автономные инвестиции")
-    r: float = Field(5.0, ge=0.0, le=30.0, description="процентная ставка, %")
+    Ms: float = Field(60.0, ge=0.0, le=200.0, description="денежная масса")
+    mm: bool = Field(True, description="денежный рынок: ставку задаёт бак свободных денег")
+    r: float = Field(5.0, ge=0.0, le=30.0, description="ставка вручную (если mm выключен), %")
     X: float = Field(10.0, ge=0.0, le=100.0, description="экспорт")
 
 
@@ -45,10 +54,14 @@ class State:
     h_sav  — накопленное сальдо частного сектора (S − I): > 0 чистое
              богатство, < 0 чистые заимствования.
     h_sump — уровень в нижнем резервуаре; насос качает Y = K_SUMP * h_sump.
+    h_idle — бак свободных денежных остатков: часть денежной массы, не занятая
+             в сделках. Его уровень через поплавок задаёт процентную ставку r.
     """
     h_gov: float = 0.0
     h_sav: float = 0.0
     h_sump: float = 20.0
+    h_idle: float = 30.0
+    r: float = 0.0
     Y: float = 60.0
     t_sec: float = 0.0
     # мгновенные потоки (для отрисовки)
@@ -62,8 +75,22 @@ class State:
     X: float = 0.0
 
 
-def investment(p: Params) -> float:
-    return max(0.0, p.I0 * (1.0 - p.r / 15.0))
+def liquidity_rate(idle: float) -> float:
+    """
+    Предпочтение ликвидности: чем больше свободных денег, тем ниже ставка.
+    При пустом баке r = R_MAX; при idle ≥ R_MAX / BETA ставка упирается
+    в ноль — ловушка ликвидности.
+    """
+    return min(R_MAX, max(0.0, R_MAX - BETA * max(0.0, idle)))
+
+
+def target_idle(p: Params, Y: float) -> float:
+    """Свободные остатки = денежная масса − деньги, занятые в сделках."""
+    return max(0.0, p.Ms - KAPPA * Y)
+
+
+def investment(p: Params, r: float) -> float:
+    return max(0.0, p.I0 * (1.0 - r / R_INV))
 
 
 def multiplier(p: Params) -> float:
@@ -71,21 +98,61 @@ def multiplier(p: Params) -> float:
     return 1.0 / (1.0 - leak) if leak < 1.0 else 0.0
 
 
-def equilibrium_income(p: Params) -> float:
-    """Кейнсианское равновесие Y* = k · (G + I + X)."""
-    return multiplier(p) * (p.G + investment(p) + p.X)
+def equilibrium(p: Params) -> tuple[float, float]:
+    """
+    Совместное равновесие товарного и денежного рынков (IS–LM):
+        Y = k · (G + I(r) + X),   r = f(Ms − KAPPA · Y).
+    F(Y) = k·(G + I(r(Y)) + X) − Y монотонно убывает → бисекция.
+    """
+    k = multiplier(p)
+
+    def rate(Y: float) -> float:
+        if not p.mm:
+            return p.r
+        return liquidity_rate(target_idle(p, Y))
+
+    def F(Y: float) -> float:
+        return k * (p.G + investment(p, rate(Y)) + p.X) - Y
+
+    lo, hi = 0.0, k * (p.G + p.I0 + p.X) + 1.0
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if F(mid) > 0:
+            lo = mid
+        else:
+            hi = mid
+    Y = 0.5 * (lo + hi)
+    return Y, rate(Y)
+
+
+def initial_state(p: Params) -> State:
+    s = State()
+    s.h_idle = target_idle(p, s.Y)
+    s.r = liquidity_rate(s.h_idle) if p.mm else p.r
+    return s
 
 
 def step(s: State, p: Params, dt: float) -> None:
     """
     Один шаг интегрирования (Эйлер, малый dt).
 
+    Если денежный рынок включён (p.mm), ставка r не задаётся извне: её определяет уровень в баке свободных
+    денежных остатков (как поплавок в машине Филлипса), а она уже
+    управляет клапаном инвестиций.
+
     Утечки (T, S, M) уходят из оборота, инъекции (G, I, X) — экзогенные
     потоки, заданные политикой и не ограниченные уровнем в баках.
     Баки лишь копят разницу: государство может работать в дефицит
     (бак уходит в минус = госдолг).
     """
-    I = investment(p)
+    # денежный рынок: вода перетекает между активными и свободными деньгами
+    s.h_idle += LAMBDA * (target_idle(p, s.Y) - s.h_idle) * dt
+    s.h_idle = max(0.0, s.h_idle)
+    # бак считается всегда, чтобы при включении рынка не было скачка;
+    # при выключенном рынке ставка задаётся вручную
+    s.r = liquidity_rate(s.h_idle) if p.mm else p.r
+
+    I = investment(p, s.r)
     G, X = p.G, p.X
 
     # распределение дохода
@@ -112,14 +179,16 @@ def step(s: State, p: Params, dt: float) -> None:
 
 
 def snapshot(s: State, p: Params) -> dict:
+    y_star, r_star = equilibrium(p)
     return {
-        "hGov": s.h_gov, "hSav": s.h_sav, "hSump": s.h_sump,
-        "Y": s.Y, "tSec": s.t_sec,
+        "hGov": s.h_gov, "hSav": s.h_sav, "hSump": s.h_sump, "hIdle": s.h_idle,
+        "Y": s.Y, "r": s.r, "tSec": s.t_sec,
         "flows": {"T": s.T, "S": s.S, "C": s.C, "Cd": s.Cd,
                   "M": s.M, "Gout": s.G_out, "Iout": s.I_out, "X": s.X},
         "params": p.model_dump(),
         "multiplier": multiplier(p),
-        "yStar": equilibrium_income(p),
+        "yStar": y_star,
+        "rStar": r_star,
     }
 
 
@@ -164,7 +233,7 @@ async def ws_sim(ws: WebSocket):
     """
     await ws.accept()
     params = Params()
-    state = State()
+    state = initial_state(params)
     reset_flag = False
     paused = False
 
@@ -198,7 +267,7 @@ async def ws_sim(ws: WebSocket):
             t0 = time.perf_counter()
 
             if reset_flag:
-                state = State()
+                state = initial_state(params)
                 reset_flag = False
 
             # интегрируем

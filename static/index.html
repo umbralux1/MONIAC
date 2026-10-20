@@ -177,6 +177,31 @@
   input[type=range]:focus-visible { outline: none; }
   input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
 
+  /* ---- Switch ---- */
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    padding: 12px 0 14px;
+  }
+  .toggle-row .tt { font-size: 14px; }
+  .toggle-row small { display: block; font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .switch { position: relative; width: 51px; height: 31px; flex: none; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 999px; background: var(--fill-2);
+    pointer-events: none;
+    transition: background .25s ease;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+    border-radius: 50%; background: #fff;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16);
+    transition: transform .25s cubic-bezier(.3,.7,.4,1);
+  }
+  .switch input:checked + .track { background: var(--ok); }
+  .switch input:checked + .track::after { transform: translateX(20px); }
+  .switch input:focus-visible + .track { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+  .ctrl[hidden] { display: none; }
+
   /* ---- Readouts ---- */
   .grid {
     display: grid; grid-template-columns: 1fr 1fr;
@@ -242,6 +267,16 @@
 
       <div class="card section">
         <h2 data-i18n="params">Параметры</h2>
+        <div class="toggle-row">
+          <div>
+            <div class="tt" data-i18n="mm_title">Денежный рынок</div>
+            <small id="mm_hint" data-i18n="mm_on">Ставку задаёт бак свободных денег</small>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="s_mm" checked aria-labelledby="mm_hint">
+            <span class="track"></span>
+          </label>
+        </div>
         <div class="ctrl">
           <label><span><span data-i18n="p_c">Склонность к потреблению</span><i>c</i></span><b id="v_c">0.80</b></label>
           <input type="range" id="s_c" min="0.50" max="0.95" step="0.01" value="0.80">
@@ -262,9 +297,13 @@
           <label><span><span data-i18n="p_I">Автономные инвестиции</span><i>I₀</i></span><b id="v_I">20.0</b></label>
           <input type="range" id="s_I" min="0" max="45" step="0.5" value="20">
         </div>
-        <div class="ctrl">
+        <div class="ctrl" id="ctrl_r" hidden>
           <label><span><span data-i18n="p_r">Процентная ставка</span><i>r, %</i></span><b id="v_r">5.0</b></label>
           <input type="range" id="s_r" min="0" max="14" step="0.1" value="5">
+        </div>
+        <div class="ctrl" id="ctrl_Ms">
+          <label><span><span data-i18n="p_Ms">Денежная масса</span><i>Mˢ</i></span><b id="v_Ms">60</b></label>
+          <input type="range" id="s_Ms" min="0" max="150" step="1" value="60">
         </div>
         <div class="ctrl">
           <label><span><span data-i18n="p_X">Экспорт</span><i>X</i></span><b id="v_X">10.0</b></label>
@@ -283,6 +322,8 @@
           <div class="ro"><i class="dot" data-c="red"></i><div><span data-i18n="f_M">Импорт</span><b id="r_M">—</b></div></div>
           <div class="ro"><i class="dot" data-c="green"></i><div><span data-i18n="f_X">Экспорт</span><b id="r_X">—</b></div></div>
           <div class="ro"><i class="dot" data-c="orange"></i><div><span data-i18n="f_B">Бюджет T − G</span><b id="r_B">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="teal"></i><div><span data-i18n="f_r">Ставка r</span><b id="r_r">—</b></div></div>
+          <div class="ro"><i class="dot" data-c="teal"></i><div><span data-i18n="f_L">Свободные деньги</span><b id="r_L">—</b></div></div>
         </div>
       </div>
 
@@ -308,16 +349,17 @@
       income: 'Национальный доход', eq: 'Равновесие',
       params: 'Параметры', flows: 'Потоки',
       p_c: 'Склонность к потреблению', p_t: 'Ставка налога', p_m: 'Склонность к импорту',
-      p_G: 'Госрасходы', p_I: 'Автономные инвестиции', p_r: 'Процентная ставка', p_X: 'Экспорт',
+      p_G: 'Госрасходы', p_I: 'Автономные инвестиции', p_Ms: 'Денежная масса', p_r: 'Процентная ставка',
+      mm_title: 'Денежный рынок', mm_on: 'Ставку задаёт бак свободных денег', mm_off: 'Ставка задаётся вручную', p_X: 'Экспорт',
       f_C: 'Потребление', f_S: 'Сбережения', f_T: 'Налоги', f_G: 'Госрасходы',
-      f_I: 'Инвестиции', f_M: 'Импорт', f_X: 'Экспорт', f_B: 'Бюджет T − G',
+      f_I: 'Инвестиции', f_M: 'Импорт', f_X: 'Экспорт', f_B: 'Бюджет T − G', f_r: 'Ставка r', f_L: 'Свободные деньги',
       pause: 'Пауза', resume: 'Продолжить', reset: 'Сброс',
       footer: 'Модель считается на сервере FastAPI и транслируется по WebSocket.',
       st_conn: 'соединение…', st_ok: 'В сети', st_pause: 'Пауза', st_err: 'Ошибка', st_off: 'Нет связи',
       c_pump: 'Насос', c_income: 'Доход', c_tax: 'Налоги', c_sav: 'Сбережения', c_cons: 'Потребление',
       c_imp: 'Импорт', c_exp: 'Экспорт', c_ad: 'Совокупный спрос',
       c_gov: 'Государство', c_surplus: 'Профицит', c_debt: 'Долг',
-      c_savT: 'Сбережения', c_wealth: 'Богатство', c_borrow: 'Займы',
+      c_savT: 'Сбережения', c_wealth: 'Богатство', c_borrow: 'Займы', c_idle: 'Свободные деньги', c_trap: 'ловушка',
       title: 'MONIAC — гидравлический компьютер Филлипса'
     },
     en: {
@@ -326,16 +368,17 @@
       income: 'National income', eq: 'Equilibrium',
       params: 'Parameters', flows: 'Flows',
       p_c: 'Propensity to consume', p_t: 'Tax rate', p_m: 'Propensity to import',
-      p_G: 'Government spending', p_I: 'Autonomous investment', p_r: 'Interest rate', p_X: 'Exports',
+      p_G: 'Government spending', p_I: 'Autonomous investment', p_Ms: 'Money supply', p_r: 'Interest rate',
+      mm_title: 'Money market', mm_on: 'Rate set by the idle-balances tank', mm_off: 'Rate set manually', p_X: 'Exports',
       f_C: 'Consumption', f_S: 'Saving', f_T: 'Taxes', f_G: 'Gov. spending',
-      f_I: 'Investment', f_M: 'Imports', f_X: 'Exports', f_B: 'Budget T − G',
+      f_I: 'Investment', f_M: 'Imports', f_X: 'Exports', f_B: 'Budget T − G', f_r: 'Interest rate r', f_L: 'Idle balances',
       pause: 'Pause', resume: 'Resume', reset: 'Reset',
       footer: 'The model runs on a FastAPI server and streams over WebSocket.',
       st_conn: 'connecting…', st_ok: 'Online', st_pause: 'Paused', st_err: 'Error', st_off: 'Offline',
       c_pump: 'Pump', c_income: 'Income', c_tax: 'Taxes', c_sav: 'Saving', c_cons: 'Consumption',
       c_imp: 'Imports', c_exp: 'Exports', c_ad: 'Aggregate demand',
       c_gov: 'Government', c_surplus: 'Surplus', c_debt: 'Debt',
-      c_savT: 'Private sector', c_wealth: 'Wealth', c_borrow: 'Borrowing',
+      c_savT: 'Private sector', c_wealth: 'Wealth', c_borrow: 'Borrowing', c_idle: 'Idle balances', c_trap: 'trap',
       title: 'MONIAC — Phillips hydraulic computer'
     }
   };
@@ -350,12 +393,12 @@
     light: {
       bg: '#ffffff', pipe: '#f2f2f5', glass: '#d2d2d7', tick: '#e5e5ea',
       text: '#1d1d1f', text2: '#86868b', inner: '#ffffff',
-      blue: '#0071e3', orange: '#ff9500', purple: '#af52de', red: '#ff3b30', green: '#34c759'
+      blue: '#0071e3', orange: '#ff9500', purple: '#af52de', red: '#ff3b30', green: '#34c759', teal: '#30b0c7'
     },
     dark: {
       bg: '#1c1c1e', pipe: '#2c2c2e', glass: '#48484a', tick: '#3a3a3c',
       text: '#f5f5f7', text2: '#8e8e93', inner: '#1c1c1e',
-      blue: '#0a84ff', orange: '#ff9f0a', purple: '#bf5af2', red: '#ff453a', green: '#30d158'
+      blue: '#0a84ff', orange: '#ff9f0a', purple: '#bf5af2', red: '#ff453a', green: '#30d158', teal: '#40c8e0'
     }
   };
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -385,9 +428,9 @@
   const FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif';
 
   /* ===================== СОСТОЯНИЕ ===================== */
-  const P = { c: 0.80, t: 0.20, m: 0.15, G: 15, I0: 20, r: 5, X: 10 };
+  const P = { c: 0.80, t: 0.20, m: 0.15, G: 15, I0: 20, Ms: 60, X: 10, mm: true, r: 5 };
   let sim = {
-    hGov: 0, hSav: 0, hSump: 20, Y: 60, tSec: 0,
+    hGov: 0, hSav: 0, hSump: 20, hIdle: 30, r: 0, Y: 60, tSec: 0,
     flows: { T:0, S:0, C:0, Cd:0, M:0, Gout:0, Iout:0, X:0 },
     multiplier: 0, yStar: 0
   };
@@ -399,7 +442,9 @@
     govT: { x: 190, y: 215, w: 100, h: 150 },
     savT: { x: 400, y: 215, w: 100, h: 150 },
     cxT: 240, cxS: 450, cxC: 590,
-    jY: 262
+    jY: 262,
+    idle: { x: 628, y: 330, w: 64, h: 110 },
+    valveY: 440
   };
   const wf = v => Math.max(0, Math.min(36, v * 0.42));
 
@@ -482,6 +527,78 @@
     txt((neg ? negLabel : posLabel) + ' ' + fmtStock(level), t.x - 12, t.y + 32, 11, neg ? K.red : K.text2, 'right', 500);
   }
 
+  /* ---- денежный рынок: бак свободных денег → поплавок → ставка → клапан I ---- */
+  const IDLE_SCALE = 30;   // = R_MAX / BETA на сервере: здесь ставка падает до нуля
+  function drawValve(open) {
+    const vx = L.cxS, vy = L.valveY;
+    ctx.beginPath(); ctx.arc(vx, vy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = K.inner; ctx.fill();
+    ctx.strokeStyle = K.teal; ctx.lineWidth = 2; ctx.stroke();
+    ctx.save(); ctx.translate(vx, vy); ctx.rotate((1 - open) * Math.PI / 2);
+    ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, 6); ctx.stroke();
+    ctx.restore();
+  }
+  function drawMoney() {
+    const open = P.I0 > 0 ? Math.max(0, Math.min(1, (sim.flows.Iout || 0) / P.I0)) : 0;
+    if (!P.mm) {
+      drawValve(open);
+      txt('r = ' + (sim.r || 0).toFixed(1) + '%', L.cxS - 16, L.valveY, 12, K.teal, 'right', 600);
+      return;
+    }
+    const t = L.idle;
+    const idle = Math.max(0, sim.hIdle || 0);
+    const frac = 1 - Math.exp(-idle / IDLE_SCALE);
+    const hFill = frac * t.h;
+    const top = t.y + t.h - hFill;
+
+    rr(t.x, t.y, t.w, t.h, 12);
+    ctx.fillStyle = K.pipe; ctx.fill();
+    if (hFill > 0.5) {
+      ctx.save();
+      rr(t.x, t.y, t.w, t.h, 12); ctx.clip();
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y + t.h);
+      ctx.lineTo(t.x, top);
+      for (let px = 0; px <= t.w; px += 3) {
+        ctx.lineTo(t.x + px, top + Math.sin(px * 0.1 + sim.tSec * 2.4) * 1.4);
+      }
+      ctx.lineTo(t.x + t.w, t.y + t.h);
+      ctx.closePath();
+      ctx.fillStyle = rgba(K.teal, 0.85); ctx.fill();
+      ctx.restore();
+    }
+    // отметка ловушки ликвидности (r = 0)
+    const trapY = Math.round(t.y + t.h - (1 - Math.exp(-1)) * t.h) + 0.5;
+    ctx.strokeStyle = K.glass; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(t.x + 4, trapY); ctx.lineTo(t.x + t.w - 4, trapY); ctx.stroke();
+    ctx.setLineDash([]);
+    txt(tr('c_trap'), t.x + t.w / 2, trapY - 8, 9, K.text2, 'center', 500);
+
+    // поплавок
+    const fy = top - 5;
+    rr(t.x + t.w / 2 - 9, fy - 4, 18, 8, 4);
+    ctx.fillStyle = K.inner; ctx.fill();
+    ctx.strokeStyle = K.teal; ctx.lineWidth = 1.5; ctx.stroke();
+
+    txt(tr('c_idle'), t.x + t.w / 2, t.y - 14, 11, K.text, 'center', 600);
+
+    // тяга от поплавка к клапану инвестиций
+    const vx = L.cxS, vy = L.valveY;
+    ctx.strokeStyle = rgba(K.teal, 0.8); ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(t.x, t.y + t.h - 10);
+    ctx.lineTo(t.x - 14, t.y + t.h - 10);
+    ctx.lineTo(t.x - 14, vy);
+    ctx.lineTo(vx + 9, vy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // клапан: открытие ~ доля инвестиций I / I₀
+    drawValve(open);
+
+    txt('r = ' + (sim.r || 0).toFixed(1) + '%', t.x + t.w / 2, t.y + t.h + 18, 13, K.teal, 'center', 600);
+  }
+
   /* ===================== РЕНДЕР ===================== */
   function draw() {
     ctx.clearRect(0, 0, W, H);
@@ -559,6 +676,7 @@
     /* ---- резервуары ---- */
     drawTank(GT, sim.hGov, K.orange, tr('c_gov'), tr('c_surplus'), tr('c_debt'));
     drawTank(ST, sim.hSav, K.purple, tr('c_savT'), tr('c_wealth'), tr('c_borrow'));
+    drawMoney();
 
     /* ---- нижний резервуар ---- */
     rr(SU.x, SU.y, SU.w, SU.h, 16);
@@ -585,19 +703,19 @@
     txt(tr('c_cons'), L.cxC + 26, labY, 12, K.blue, 'left', 600);
     txt(tr('c_imp'), 640, L.jY - 26, 12, K.red, 'center', 600);
     txt('G', L.cxT + 22, 440, 13, K.orange, 'left', 600);
-    txt('I', L.cxS + 22, 440, 13, K.purple, 'left', 600);
+    txt('I', L.cxS + 22, 475, 13, K.purple, 'left', 600);
     txt(tr('c_exp'), 345 + 36, 620, 12, K.green, 'left', 600);
     txt(tr('c_ad'), SU.x + 18, SU.y + 16, 11, K.text2, 'left', 500);
   }
 
   /* ===================== UI / WEBSOCKET ===================== */
   const ui = {};
-  ['c', 't', 'm', 'G', 'I', 'r', 'X'].forEach(k => {
+  ['c', 't', 'm', 'G', 'I', 'Ms', 'r', 'X'].forEach(k => {
     ui['s_' + k] = document.getElementById('s_' + k);
     ui['v_' + k] = document.getElementById('v_' + k);
   });
-  const KEYMAP = { c: 'c', t: 't', m: 'm', G: 'G', I: 'I0', r: 'r', X: 'X' };
-  const FMT = { c: 2, t: 2, m: 2, G: 1, I: 1, r: 1, X: 1 };
+  const KEYMAP = { c: 'c', t: 't', m: 'm', G: 'G', I: 'I0', Ms: 'Ms', r: 'r', X: 'X' };
+  const FMT = { c: 2, t: 2, m: 2, G: 1, I: 1, Ms: 0, r: 1, X: 1 };
   const $ = id => document.getElementById(id);
 
   let ws = null;
@@ -630,6 +748,20 @@
     ui['v_' + k].textContent = parseFloat(el.value).toFixed(FMT[k]);
     paintTrack(el);
   });
+
+  function applyMM() {
+    $('ctrl_Ms').hidden = !P.mm;
+    $('ctrl_r').hidden = P.mm;
+    const hint = $('mm_hint');
+    hint.dataset.i18n = P.mm ? 'mm_on' : 'mm_off';
+    hint.textContent = tr(hint.dataset.i18n);
+  }
+  $('s_mm').addEventListener('change', e => {
+    P.mm = e.target.checked;
+    applyMM();
+    scheduleParams();
+  });
+  applyMM();
 
   let statusKey = 'st_conn', statusCls = '';
   function setStatus(key, cls) {
@@ -670,6 +802,8 @@
     const B = sim.flows.T - sim.flows.Gout;
     $('r_B').textContent = (B > 0 ? '+' : '') + B.toFixed(1);
     $('r_B').style.color = B < -0.05 ? K.red : '';
+    $('r_r').textContent = (sim.r || 0).toFixed(2) + '%';
+    $('r_L').textContent = P.mm ? (sim.hIdle || 0).toFixed(1) : '—';
   }
 
   let retryDelay = 500;
