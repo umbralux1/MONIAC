@@ -222,6 +222,7 @@ Y* = k · (G + I + X),     k = 1 / (1 − c·(1 − t)·(1 − m))
 ├── Makefile
 ├── Dockerfile
 ├── render.yaml          # Blueprint для деплоя на Render
+├── LICENSE              # MIT
 └── .python-version      # версия Python для Render
 ```
 
@@ -239,3 +240,7 @@ make typecheck     # mypy
 - A. W. Phillips, *Mechanical Models in Economic Dynamics*, Economica, 1950.
 - MONIAC в Музее науки (Лондон) и в Резервном банке Новой Зеландии.
 - Модель IS–LM: J. R. Hicks, *Mr. Keynes and the "Classics"*, Econometrica, 1937.
+
+## Лицензия
+
+[MIT](LICENSE)

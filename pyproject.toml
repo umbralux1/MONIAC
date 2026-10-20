@@ -3,6 +3,7 @@ name = "moniac"
 version = "0.1.0"
 description = "Гидравлический компьютер Филлипса на FastAPI"
 requires-python = ">=3.9"
+license = { text = "MIT" }
 dependencies = [
     "fastapi==0.115.6",
     "uvicorn[standard]==0.34.0",
