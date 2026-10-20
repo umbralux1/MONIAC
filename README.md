@@ -49,6 +49,34 @@ make docker-run   # http://localhost:8000
 
 Все команды: `make help`. Порт и хост меняются переменными: `make run PORT=9000`.
 
+## Деплой на Render
+
+В репозитории есть `render.yaml` (Blueprint), поэтому проект разворачивается в несколько кликов:
+
+1. Залей репозиторий на GitHub.
+2. В [Render Dashboard](https://dashboard.render.com) выбери **New → Blueprint** и укажи репозиторий.
+3. Render прочитает `render.yaml`, соберёт сервис и выдаст адрес вида `https://moniac-xxxx.onrender.com`.
+
+Что задано в `render.yaml`:
+
+| Настройка | Значение |
+|---|---|
+| Сборка | `pip install -r requirements.txt` |
+| Запуск | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| Проверка здоровья | `/api/health` |
+| Python | 3.11 (`PYTHON_VERSION` и `.python-version`) |
+| План | `free`, регион `frankfurt` |
+| Автодеплой | при каждом коммите в подключённую ветку |
+
+Можно и без Blueprint: **New → Web Service**, выбрать репозиторий и вписать те же команды сборки и запуска вручную.
+
+Особенности бесплатного плана:
+
+- после ~15 минут без запросов сервис засыпает, и первое открытие занимает до минуты;
+- ресурсов немного (0,1 CPU, 512 МБ), а каждая открытая вкладка — отдельная симуляция на 30 FPS. Для демонстрации хватит, для большого числа одновременных посетителей нужен платный план.
+
+Python закреплён на 3.11 намеренно: на более новых версиях, которые Render ставит по умолчанию, зафиксированные в `requirements.txt` версии пакетов могут не собраться.
+
 ## Модель
 
 ### Круговорот дохода
@@ -192,7 +220,9 @@ Y* = k · (G + I + X),     k = 1 / (1 − c·(1 − t)·(1 − m))
 ├── requirements-dev.txt # ruff, mypy, pytest
 ├── pyproject.toml
 ├── Makefile
-└── Dockerfile
+├── Dockerfile
+├── render.yaml          # Blueprint для деплоя на Render
+└── .python-version      # версия Python для Render
 ```
 
 ## Разработка
